@@ -9,6 +9,10 @@ import com.hajducakmarek.fixit.ui.IssueListScreen
 import com.hajducakmarek.fixit.viewmodel.CreateIssueViewModel
 import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
 import com.hajducakmarek.fixit.platform.ImagePicker
+import com.hajducakmarek.fixit.models.Issue
+import com.hajducakmarek.fixit.models.IssueStatus
+import kotlinx.datetime.Clock
+import kotlinx.coroutines.launch
 
 @Composable
 fun App(
@@ -22,6 +26,7 @@ fun App(
 
         var showCreateScreen by remember { mutableStateOf(false) }
 
+        // Main content
         if (showCreateScreen) {
             CreateIssueScreen(
                 viewModel = createViewModel,
@@ -39,5 +44,19 @@ fun App(
                 onAddClick = { showCreateScreen = true }
             )
         }
+
+        // Camera overlay (Android only)
+        if (imagePicker.showCamera) {
+            CameraOverlay(
+                onPhotoCaptured = { path -> imagePicker.onPhotoCaptured(path) },
+                onCancel = { imagePicker.onCameraCancel() }
+            )
+        }
     }
 }
+
+@Composable
+expect fun CameraOverlay(
+    onPhotoCaptured: (String) -> Unit,
+    onCancel: () -> Unit
+)

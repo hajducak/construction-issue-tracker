@@ -76,6 +76,17 @@ fun IssueCard(issue: Issue) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Show photo if exists
+            if (issue.photoPath.isNotEmpty()) {
+                // Simple image display - in production you'd use Coil or Glide
+                Text(
+                    text = "📷 Photo attached",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             Text(
                 text = issue.flatNumber,
                 style = MaterialTheme.typography.labelMedium,
@@ -87,7 +98,6 @@ fun IssueCard(issue: Issue) {
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(8.dp))
-            // Row = horizontal stack (like SwiftUI's HStack
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
