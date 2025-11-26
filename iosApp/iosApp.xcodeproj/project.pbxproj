@@ -6,12 +6,17 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		522A91182ED746CE00EE8D5D /* libsqlite3.0.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 522A91172ED746CE00EE8D5D /* libsqlite3.0.tbd */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		522A91172ED746CE00EE8D5D /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
 		9F1644599D0D814634263318 /* ConstructionIssueTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConstructionIssueTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2E37CB64D40DC84F9F3DA47B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		2E37CB64D40DC84F9F3DA47B /* Exceptions for "iosApp" folder in "iosApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -29,7 +34,7 @@
 		C14F1219E085318BB6390597 /* iosApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				2E37CB64D40DC84F9F3DA47B /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				2E37CB64D40DC84F9F3DA47B /* Exceptions for "iosApp" folder in "iosApp" target */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -41,17 +46,27 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				522A91182ED746CE00EE8D5D /* libsqlite3.0.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		522A91162ED746CE00EE8D5D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				522A91172ED746CE00EE8D5D /* libsqlite3.0.tbd */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		677F6B5FBE4E7C1E8059EE38 = {
 			isa = PBXGroup;
 			children = (
 				A42B482695425ADE88D60D20 /* Configuration */,
 				C14F1219E085318BB6390597 /* iosApp */,
+				522A91162ED746CE00EE8D5D /* Frameworks */,
 				AE6C05FC3ECF7F78AE66D55C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -75,6 +90,7 @@
 				80D5BF624BAD5EC65ABF82EF /* Sources */,
 				37F553EB87AA5AFBF08F3FF0 /* Frameworks */,
 				090A85D90D9EBEF28694A28C /* Resources */,
+				52DB3CD92ED7400D00466B83 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -135,6 +151,23 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		52DB3CD92ED7400D00466B83 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
+		};
 		95D52439D14765B09BD40F66 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -301,6 +334,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(PLATFORM_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -330,6 +364,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(PLATFORM_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
