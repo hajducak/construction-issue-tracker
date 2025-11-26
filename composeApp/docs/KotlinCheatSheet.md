@@ -27,3 +27,5 @@ fun greet(name: String): String {
 enum class Status {
     OPEN, IN_PROGRESS, FIXED, VERIFIED
 }
+
+suspend = async function (like Swift's async

@@ -1,0 +1,47 @@
+-- User table
+CREATE TABLE User (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL
+);
+
+-- Issue table
+CREATE TABLE Issue (
+    id TEXT NOT NULL PRIMARY KEY,
+    photoPath TEXT NOT NULL,
+    description TEXT NOT NULL,
+    flatNumber TEXT NOT NULL,
+    status TEXT NOT NULL,
+    createdBy TEXT NOT NULL,
+    assignedTo TEXT,
+    createdAt INTEGER NOT NULL,
+    completedAt INTEGER,
+    FOREIGN KEY (createdBy) REFERENCES User(id),
+    FOREIGN KEY (assignedTo) REFERENCES User(id)
+);
+
+-- Queries
+selectAllUsers:
+SELECT * FROM User;
+
+selectUserById:
+SELECT * FROM User WHERE id = ?;
+
+insertUser:
+INSERT INTO User(id, name, role) VALUES (?, ?, ?);
+
+selectAllIssues:
+SELECT * FROM Issue;
+
+selectIssuesByStatus:
+SELECT * FROM Issue WHERE status = ?;
+
+insertIssue:
+INSERT INTO Issue(id, photoPath, description, flatNumber, status, createdBy, assignedTo, createdAt, completedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateIssueStatus:
+UPDATE Issue SET status = ?, completedAt = ? WHERE id = ?;
+
+updateIssueAssignment:
+UPDATE Issue SET assignedTo = ? WHERE id = ?;
