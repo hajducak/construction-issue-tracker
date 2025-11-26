@@ -4,8 +4,10 @@ import ComposeApp
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let databaseDriverFactory = DatabaseDriverFactory()
+        let imagePicker = ImagePicker()
         return MainViewControllerKt.MainViewController(
-            databaseDriverFactory: databaseDriverFactory
+            databaseDriverFactory: databaseDriverFactory,
+            imagePicker: imagePicker
         )
     }
 

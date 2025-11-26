@@ -14,7 +14,10 @@ import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
 // @Composable = this function describes UI (like SwiftUI's View)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IssueListScreen(viewModel: IssueListViewModel) {
+fun IssueListScreen(
+    viewModel: IssueListViewModel,
+    onAddClick: () -> Unit = {}
+) {
     val issues by viewModel.issues.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     // collectAsState() = observe Flow changes (like SwiftUI's @State)
@@ -26,7 +29,7 @@ fun IssueListScreen(viewModel: IssueListViewModel) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* TODO: Add new issue */ }) {
+            FloatingActionButton(onClick = onAddClick) {
                 Text("+")
             }
         }

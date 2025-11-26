@@ -8,10 +8,27 @@
 
 /* Begin PBXBuildFile section */
 		522A91182ED746CE00EE8D5D /* libsqlite3.0.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 522A91172ED746CE00EE8D5D /* libsqlite3.0.tbd */; };
+		522A911A2ED7510600EE8D5D /* ComposeApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 522A91192ED7510600EE8D5D /* ComposeApp.framework */; };
+		522A911C2ED7514200EE8D5D /* ComposeApp.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 522A91192ED7510600EE8D5D /* ComposeApp.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		522A911B2ED7511D00EE8D5D /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				522A911C2ED7514200EE8D5D /* ComposeApp.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		522A91172ED746CE00EE8D5D /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
+		522A91192ED7510600EE8D5D /* ComposeApp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ComposeApp.framework; path = "../composeApp/build/xcode-frameworks/Debug/iphonesimulator18.1/ComposeApp.framework"; sourceTree = "<group>"; };
 		9F1644599D0D814634263318 /* ConstructionIssueTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConstructionIssueTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -46,6 +63,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				522A911A2ED7510600EE8D5D /* ComposeApp.framework in Frameworks */,
 				522A91182ED746CE00EE8D5D /* libsqlite3.0.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -56,6 +74,7 @@
 		522A91162ED746CE00EE8D5D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				522A91192ED7510600EE8D5D /* ComposeApp.framework */,
 				522A91172ED746CE00EE8D5D /* libsqlite3.0.tbd */,
 			);
 			name = Frameworks;
@@ -86,11 +105,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D1A0CBCE66BF0A61DC22172C /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
-				95D52439D14765B09BD40F66 /* Compile Kotlin Framework */,
+				52DB3CD92ED7400D00466B83 /* Compile Kotlin Framework */,
 				80D5BF624BAD5EC65ABF82EF /* Sources */,
 				37F553EB87AA5AFBF08F3FF0 /* Frameworks */,
 				090A85D90D9EBEF28694A28C /* Resources */,
-				52DB3CD92ED7400D00466B83 /* ShellScript */,
+				522A911B2ED7511D00EE8D5D /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -151,24 +170,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		52DB3CD92ED7400D00466B83 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
-		};
-		95D52439D14765B09BD40F66 /* Compile Kotlin Framework */ = {
+		52DB3CD92ED7400D00466B83 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -185,7 +187,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -334,7 +336,10 @@
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(PLATFORM_NAME)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/Debug",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/Debug/iphonesimulator18.1",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -347,6 +352,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = "\"-framework ComposeApp\"";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -364,7 +370,10 @@
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(PLATFORM_NAME)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/Release/iphonesimulator18.1",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/Release",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -377,6 +386,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				OTHER_LDFLAGS = "\"-framework ComposeApp\"";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
