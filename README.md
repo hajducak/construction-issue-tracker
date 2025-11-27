@@ -4,24 +4,39 @@ A Kotlin Multiplatform (KMP) app for managing construction issues across flats. 
 
 ## 🎯 Features
 
-### ✅ Implemented (Sessions 1-7)
+### ✅ Implemented (Sessions 1-8)
 - **Cross-platform architecture**: ~75% code sharing between Android and iOS
 - **Issue management**: Create, view, and track construction issues
-- **Photo capture** (Android): Take photos with CameraX, full permission handling
+- **Photo capture** (Android): CameraX integration with full permissions
 - **Photo display**: Thumbnails in list, full-screen viewer on click
-- **Local database**: SQLDelight with type-safe queries and coroutines
-- **State management**: ViewModels with StateFlow for reactive UI
-- **Navigation**: Multi-screen flow with proper back navigation
-- **Material Design 3**: Modern, clean UI with proper spacing
+- **Issue details**: Dedicated detail screen for each issue
+- **Status management**: Update issue status with confirmation dialog
+- **User feedback**: Toast notifications for status changes
+- **Local database**: SQLDelight with type-safe queries
+- **State management**: ViewModels with StateFlow
+- **Navigation**: Multi-screen flow (List → Detail → Create)
+- **Material Design 3**: Modern, polished UI
 
-### 🚧 Coming Soon (Sessions 8-27)
-- Issue status updates (Open → In Progress → Fixed → Verified)
-- Worker assignment and management
+### Session Progress
+- Session 1: ✅ Environment setup (Android Studio, Xcode, Git)
+- Session 2: ✅ Data models & SQLDelight schema
+- Session 3: ✅ Repository pattern & expect/actual
+- Session 4: ✅ Issue list UI (Android + iOS)
+- Session 5: ✅ Create issue screen with navigation
+- Session 6: ✅ Real camera integration (Android)
+- Session 7: ✅ Photo display with Coil & full-screen viewer
+- Session 8: ✅ Issue detail screen & status updates
+
+### 🚧 Coming Soon (Sessions 9-27)
+- Worker management and assignment
 - User authentication
-- Filtering and search
+- Status filtering
+- Search functionality
 - Real-time sync
 - iOS camera integration
-- Export reports
+- Export reports as PDF
+- Push notifications
+- Offline mode improvements
 
 ## 📱 Screenshots
 

@@ -44,4 +44,27 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
             completedAt = issue.completedAt
         )
     }
+
+    suspend fun getIssueById(id: String): Issue? {
+        val dbIssue = dbQuery.selectIssueById(id).executeAsOneOrNull() ?: return null
+
+        return Issue(
+            id = dbIssue.id,
+            photoPath = dbIssue.photoPath,
+            description = dbIssue.description,
+            flatNumber = dbIssue.flatNumber,
+            status = IssueStatus.valueOf(dbIssue.status),
+            createdBy = dbIssue.createdBy,
+            assignedTo = dbIssue.assignedTo,
+            createdAt = dbIssue.createdAt,
+            completedAt = dbIssue.completedAt
+        )
+    }
+
+    suspend fun updateIssueStatus(issueId: String, status: IssueStatus) {
+        dbQuery.updateIssueStatus(
+            status = status.name,
+            id = issueId
+        )
+    }
 }

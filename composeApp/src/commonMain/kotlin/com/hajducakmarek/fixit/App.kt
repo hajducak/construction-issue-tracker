@@ -5,14 +5,18 @@ import androidx.compose.runtime.*
 import com.hajducakmarek.fixit.database.DatabaseDriverFactory
 import com.hajducakmarek.fixit.repository.IssueRepository
 import com.hajducakmarek.fixit.ui.CreateIssueScreen
+import com.hajducakmarek.fixit.ui.IssueDetailScreen
 import com.hajducakmarek.fixit.ui.IssueListScreen
 import com.hajducakmarek.fixit.viewmodel.CreateIssueViewModel
+import com.hajducakmarek.fixit.viewmodel.IssueDetailViewModel
 import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
 import com.hajducakmarek.fixit.platform.ImagePicker
-import com.hajducakmarek.fixit.models.Issue
-import com.hajducakmarek.fixit.models.IssueStatus
-import kotlinx.datetime.Clock
-import kotlinx.coroutines.launch
+
+sealed class Screen {
+    object List : Screen()
+    object Create : Screen()
+    data class Detail(val issueId: String) : Screen()
+}
 
 @Composable
 fun App(
@@ -21,28 +25,47 @@ fun App(
 ) {
     MaterialTheme {
         val repository = remember { IssueRepository(databaseDriverFactory) }
-        val listViewModel = remember { IssueListViewModel(repository) }
-        val createViewModel = remember { CreateIssueViewModel(repository) }
+        var currentScreen by remember { mutableStateOf<Screen>(Screen.List) }
 
-        var showCreateScreen by remember { mutableStateOf(false) }
+        when (val screen = currentScreen) {
+            is Screen.List -> {
+                val listViewModel = remember { IssueListViewModel(repository) }
 
-        // Main content
-        if (showCreateScreen) {
-            CreateIssueScreen(
-                viewModel = createViewModel,
-                onNavigateBack = {
-                    showCreateScreen = false
-                    listViewModel.loadIssues()
-                },
-                onTakePhoto = { callback ->
-                    imagePicker.pickImage(callback)
+                IssueListScreen(
+                    viewModel = listViewModel,
+                    onAddClick = { currentScreen = Screen.Create },
+                    onIssueClick = { issue ->
+                        currentScreen = Screen.Detail(issue.id)
+                    }
+                )
+            }
+
+            is Screen.Create -> {
+                val createViewModel = remember { CreateIssueViewModel(repository) }
+
+                CreateIssueScreen(
+                    viewModel = createViewModel,
+                    onNavigateBack = {
+                        currentScreen = Screen.List
+                    },
+                    onTakePhoto = { callback ->
+                        imagePicker.pickImage(callback)
+                    }
+                )
+            }
+
+            is Screen.Detail -> {
+                val detailViewModel = remember(screen.issueId) {
+                    IssueDetailViewModel(repository, screen.issueId)
                 }
-            )
-        } else {
-            IssueListScreen(
-                viewModel = listViewModel,
-                onAddClick = { showCreateScreen = true }
-            )
+
+                IssueDetailScreen(
+                    viewModel = detailViewModel,
+                    onNavigateBack = {
+                        currentScreen = Screen.List
+                    }
+                )
+            }
         }
 
         // Camera overlay (Android only)

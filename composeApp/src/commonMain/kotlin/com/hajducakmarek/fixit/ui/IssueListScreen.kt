@@ -18,7 +18,8 @@ import androidx.compose.foundation.clickable
 @Composable
 fun IssueListScreen(
     viewModel: IssueListViewModel,
-    onAddClick: () -> Unit = {}
+    onAddClick: () -> Unit = {},
+    onIssueClick: (Issue) -> Unit = {}
 ) {
     val issues by viewModel.issues.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -59,7 +60,10 @@ fun IssueListScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(issues) { issue ->
-                        IssueCard(issue)
+                        IssueCard(
+                            issue = issue,
+                            onClick = { onIssueClick(issue) }
+                        )
                     }
                 }
             }
@@ -68,12 +72,17 @@ fun IssueListScreen(
 }
 
 @Composable
-fun IssueCard(issue: Issue) {
+fun IssueCard(
+    issue: Issue,
+    onClick: () -> Unit = {}
+) {
     var showFullScreenPhoto by remember { mutableStateOf(false) }
     val hasPhoto = issue.photoPath.isNotEmpty()
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         if (hasPhoto) {

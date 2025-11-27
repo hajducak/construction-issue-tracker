@@ -33,6 +33,9 @@ INSERT INTO User(id, name, role) VALUES (?, ?, ?);
 selectAllIssues:
 SELECT * FROM Issue;
 
+selectIssueById:
+SELECT * FROM Issue WHERE id = ?;
+
 selectIssuesByStatus:
 SELECT * FROM Issue WHERE status = ?;
 
@@ -41,7 +44,11 @@ INSERT INTO Issue(id, photoPath, description, flatNumber, status, createdBy, ass
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateIssueStatus:
-UPDATE Issue SET status = ?, completedAt = ? WHERE id = ?;
+UPDATE Issue
+SET status = :status
+WHERE id = :id;
 
 updateIssueAssignment:
-UPDATE Issue SET assignedTo = ? WHERE id = ?;
+UPDATE Issue
+SET assignedTo = :assignedTo
+WHERE id = :id;
