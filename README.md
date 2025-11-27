@@ -4,13 +4,22 @@ A Kotlin Multiplatform (KMP) app for managing construction issues across flats. 
 
 ## 🎯 Features
 
-### ✅ Implemented (Sessions 1-4)
-- **Cross-platform UI**: Same codebase runs on Android & iOS
-- **Issue List Screen**: View all construction issues with status colors
-- **SQLDelight Database**: Type-safe local persistence
-- **Repository Pattern**: Clean architecture with expect/actual for platform-specific code
-- **State Management**: ViewModels with StateFlow for reactive UI
-- **Material Design 3**: Modern UI components
+### ✅ Implemented (Sessions 1-6)
+- **Cross-platform architecture**: ~70% code sharing
+- **Issue management**: Create, view, filter by status
+- **Camera integration** (Android): Take photos with CameraX
+- **Local database**: SQLDelight with type-safe queries
+- **State management**: ViewModels with StateFlow
+- **Navigation**: Multi-screen flow with proper state handling
+- **Permission handling**: Runtime camera permissions
+
+### Session Progress
+- Session 1: ✅ Environment setup
+- Session 2: ✅ Data models & SQLDelight
+- Session 3: ✅ Repository pattern & expect/actual
+- Session 4: ✅ Issue list UI (Android + iOS)
+- Session 5: ✅ Create issue screen
+- Session 6: ✅ Real camera integration (Android)
 
 ### 🚧 Coming Soon
 - Camera integration for issue photos
