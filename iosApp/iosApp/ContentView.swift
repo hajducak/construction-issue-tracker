@@ -1,22 +1,19 @@
 import SwiftUI
 import ComposeApp
 
-struct ComposeView: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> UIViewController {
-        let databaseDriverFactory = DatabaseDriverFactory()
-        let imagePicker = ImagePicker()
-        return MainViewControllerKt.MainViewController(
-            databaseDriverFactory: databaseDriverFactory,
-            imagePicker: imagePicker
-        )
-    }
-
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
-}
-
 struct ContentView: View {
     var body: some View {
-        ComposeView()
-            .ignoresSafeArea(.all)
+        ComposeViewControllerWrapper()
+            .ignoresSafeArea()
+    }
+}
+
+struct ComposeViewControllerWrapper: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        return MainViewControllerKt.createViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        // Nothing to update
     }
 }
