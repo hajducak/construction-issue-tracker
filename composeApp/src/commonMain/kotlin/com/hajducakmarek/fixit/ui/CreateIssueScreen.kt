@@ -7,6 +7,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.hajducakmarek.fixit.viewmodel.CreateIssueViewModel
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +47,18 @@ fun CreateIssueScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (photoPath != null) "Photo Taken \u2713" else "Take Photo")
+            }
+
+            photoPath?.let { path ->
+                Spacer(modifier = Modifier.height(8.dp))
+                IssueImage(
+                    photoPath = path,
+                    contentDescription = "Captured photo preview",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
             }
 
             // Flat number input

@@ -31,6 +31,7 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.coil.compose)
             // Existing
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)

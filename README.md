@@ -4,116 +4,213 @@ A Kotlin Multiplatform (KMP) app for managing construction issues across flats. 
 
 ## 🎯 Features
 
-### ✅ Implemented (Sessions 1-6)
-- **Cross-platform architecture**: ~70% code sharing
-- **Issue management**: Create, view, filter by status
-- **Camera integration** (Android): Take photos with CameraX
-- **Local database**: SQLDelight with type-safe queries
-- **State management**: ViewModels with StateFlow
-- **Navigation**: Multi-screen flow with proper state handling
-- **Permission handling**: Runtime camera permissions
+### ✅ Implemented (Sessions 1-7)
+- **Cross-platform architecture**: ~75% code sharing between Android and iOS
+- **Issue management**: Create, view, and track construction issues
+- **Photo capture** (Android): Take photos with CameraX, full permission handling
+- **Photo display**: Thumbnails in list, full-screen viewer on click
+- **Local database**: SQLDelight with type-safe queries and coroutines
+- **State management**: ViewModels with StateFlow for reactive UI
+- **Navigation**: Multi-screen flow with proper back navigation
+- **Material Design 3**: Modern, clean UI with proper spacing
 
-### Session Progress
-- Session 1: ✅ Environment setup
-- Session 2: ✅ Data models & SQLDelight
-- Session 3: ✅ Repository pattern & expect/actual
-- Session 4: ✅ Issue list UI (Android + iOS)
-- Session 5: ✅ Create issue screen
-- Session 6: ✅ Real camera integration (Android)
-
-### 🚧 Coming Soon
-- Camera integration for issue photos
-- Create/Edit issue screens
+### 🚧 Coming Soon (Sessions 8-27)
+- Issue status updates (Open → In Progress → Fixed → Verified)
+- Worker assignment and management
 - User authentication
-- Issue assignment workflow
-- Status filtering
-- Real-time updates
+- Filtering and search
+- Real-time sync
+- iOS camera integration
+- Export reports
 
 ## 📱 Screenshots
 
 ### Android
-- Issue list with status badges (OPEN, IN_PROGRESS, FIXED, VERIFIED)
-- Material 3 cards with flat numbers and descriptions
+- **Issue List**: Clean cards with optional photo thumbnails
+- **Create Issue**: Camera integration with live preview
+- **Photo Viewer**: Full-screen photo viewing
 
 ### iOS
-- Native iOS look and feel
-- Same functionality as Android
+- UI working, camera integration pending
 
 ## 🛠 Tech Stack
 
-- **Kotlin Multiplatform**: Shared business logic
-- **Jetpack Compose Multiplatform**: Shared UI
-- **SQLDelight**: Type-safe database
-- **Kotlinx Coroutines**: Async programming
+### Shared Code (~75%)
+- **Kotlin Multiplatform**: Business logic shared across platforms
+- **Jetpack Compose Multiplatform**: Declarative UI framework
+- **SQLDelight 2.0**: Type-safe SQL database
+- **Kotlinx Coroutines**: Async/concurrent programming
+- **Kotlinx Serialization**: JSON serialization
+- **Kotlinx DateTime**: Cross-platform date/time handling
 - **StateFlow**: Reactive state management
-- **Kotlinx Serialization**: JSON handling
-- **Kotlinx DateTime**: Cross-platform date/time
+
+### Android-Specific (~15%)
+- **CameraX**: Modern camera API
+- **Coil**: Image loading and caching
+- **Accompanist Permissions**: Runtime permission handling
+
+### iOS-Specific (~10%)
+- **Native SQLite**: iOS database driver
+- **UIKit Integration**: SwiftUI interop (pending)
 
 ## 🏗 Architecture
 ```
-├── commonMain/          # Shared code (80% of app)
-│   ├── models/          # Data classes (Issue, User)
-│   ├── database/        # SQLDelight schema & queries
-│   ├── repository/      # Data access layer
-│   ├── viewmodel/       # Business logic & state
-│   └── ui/              # Compose UI screens
-├── androidMain/         # Android-specific (10%)
-│   └── database/        # Android SQLite driver
-├── iosMain/             # iOS-specific (10%)
-│   └── database/        # iOS SQLite driver
+ConstructionIssueTracker/
+├── composeApp/
+│   ├── commonMain/          # 75% - Shared code
+│   │   ├── kotlin/
+│   │   │   ├── models/      # Data classes (Issue, User)
+│   │   │   ├── database/    # expect classes
+│   │   │   ├── repository/  # Data access layer
+│   │   │   ├── viewmodel/   # Business logic & state
+│   │   │   ├── ui/          # Compose UI screens
+│   │   │   └── platform/    # expect declarations
+│   │   └── sqldelight/      # SQL schema & queries
+│   ├── androidMain/         # 15% - Android specific
+│   │   └── kotlin/
+│   │       ├── database/    # Android SQLite driver
+│   │       ├── platform/    # actual implementations
+│   │       ├── camera/      # CameraX integration
+│   │       └── ui/          # Android image loading
+│   └── iosMain/             # 10% - iOS specific
+│       └── kotlin/
+│           ├── database/    # iOS SQLite driver
+│           ├── platform/    # actual implementations
+│           └── ui/          # iOS image loading (stub)
+└── iosApp/                  # iOS app wrapper
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Android Studio with KMP plugin
-- Xcode (for iOS)
-- Java JDK 17
-- macOS (for iOS development)
+- **Android Studio** Ladybug (2024.2.1+) with KMP plugin
+- **Xcode** 16+ (for iOS, macOS only)
+- **JDK** 17
+- **macOS** (required for iOS development)
 
 ### Run Android
 ```bash
 ./gradlew :composeApp:installDebug
 ```
-
-Or click Run in Android Studio
+Or click **Run** ▶️ in Android Studio
 
 ### Run iOS
 ```bash
 cd iosApp
 open iosApp.xcodeproj
 ```
+Then click **Run** ▶️ in Xcode (Cmd+R)
 
-Then click Run in Xcode (Cmd+R)
+## 📚 Learning Journey
 
-## 📚 What I Learned
+### Session 1: Environment Setup ✅
+- Installed Android Studio, Xcode, JDK
+- Created KMP project with Compose Multiplatform
+- Set up GitHub repository
+- Got "Hello World" running on both platforms
 
-### Session 1: Setup
-- KMP project structure
-- Gradle configuration
-- expect/actual mechanism
+### Session 2: Data Layer ✅
+- Learned Kotlin syntax (coming from Swift)
+- Created `Issue` and `User` data models
+- Designed SQLDelight schema
+- Wrote type-safe SQL queries
 
-### Session 2: Data Layer
-- Kotlin syntax vs Swift
-- Data classes and enums
-- SQLDelight schema design
-
-### Session 3: Platform Abstraction
-- Repository pattern
-- Database drivers (Android/iOS)
+### Session 3: Architecture & Patterns ✅
+- **expect/actual pattern**: Platform abstraction
+- Database drivers for Android & iOS
+- Repository pattern for data access
 - Dependency injection basics
 
-### Session 4: UI & State
-- Jetpack Compose basics
-- StateFlow reactive programming
-- ViewModel lifecycle
-- LazyColumn for lists
+### Session 4: UI & State Management ✅
+- Jetpack Compose fundamentals
+- `StateFlow` for reactive state
+- `ViewModel` lifecycle management
+- Built issue list screen (Android + iOS)
 
-## 🎓 Learning Resources
+### Session 5: Navigation & Forms ✅
+- Multi-screen navigation
+- Create issue screen with form validation
+- ImagePicker interface (expect/actual)
+- Navigation state management
 
-- [Kotlin Multiplatform Docs](https://kotlinlang.org/docs/multiplatform.html)
-- [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/)
-- [SQLDelight](https://cashapp.github.io/sqldelight/)
+### Session 6: Camera Integration ✅
+- CameraX implementation (Android)
+- Runtime permission handling
+- Photo capture and storage
+- Fixed navigation flow (camera as overlay)
+
+### Session 7: Image Display ✅
+- Coil image loading library
+- Photo thumbnails in list
+- Full-screen photo viewer
+- Optimized layouts (with/without photos)
+- expect/actual for image loading
+
+### Next Up
+- **Session 8**: Issue detail screen with status updates
+- **Session 9**: Worker assignment
+- **Session 10**: Filtering and search
+
+## 🎓 Key KMP Concepts Learned
+
+### expect/actual Pattern
+```kotlin
+// Common code
+expect class DatabaseDriver {
+    fun create(): SqlDriver
+}
+
+// Android implementation
+actual class DatabaseDriver(context: Context) {
+    actual fun create() = AndroidSqliteDriver(...)
+}
+
+// iOS implementation  
+actual class DatabaseDriver {
+    actual fun create() = NativeSqliteDriver(...)
+}
+```
+
+### State Management
+```kotlin
+class IssueListViewModel(repository: IssueRepository) : ViewModel() {
+    private val _issues = MutableStateFlow<List<Issue>>(emptyList())
+    val issues: StateFlow<List<Issue>> = _issues.asStateFlow()
+    
+    fun loadIssues() {
+        viewModelScope.launch {
+            _issues.value = repository.getAllIssues()
+        }
+    }
+}
+```
+
+### Compose UI
+```kotlin
+@Composable
+fun IssueCard(issue: Issue) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(issue.flatNumber)
+            Text(issue.description)
+        }
+    }
+}
+```
+
+## 📊 Project Stats
+
+- **Total Sessions Completed**: 7 / 27 (26%)
+- **Time Invested**: ~6-7 hours
+- **Lines of Code**: ~1,200
+- **Code Sharing**: ~75%
+- **Platforms**: Android ✅, iOS ⏳
+
+## 🐛 Known Issues
+
+- iOS camera integration pending
+- iOS framework configuration needs refinement
+- Photo file validation could be improved
 
 ## 📝 License
 
@@ -121,4 +218,14 @@ Personal learning project - feel free to use as reference!
 
 ## 👤 Author
 
-Marek Hajdučák - Learning KMP development
+**Marek Hajdučák**  
+Learning KMP development  
+GitHub: [@hajducak](https://github.com/hajducak)
+
+## 🙏 Resources Used
+
+- [Kotlin Multiplatform Docs](https://kotlinlang.org/docs/multiplatform.html)
+- [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/)
+- [SQLDelight](https://cashapp.github.io/sqldelight/)
+- [CameraX Documentation](https://developer.android.com/training/camerax)
+- [Coil Image Loading](https://coil-kt.github.io/coil/)

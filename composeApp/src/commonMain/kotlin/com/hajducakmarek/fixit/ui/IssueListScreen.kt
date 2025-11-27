@@ -6,12 +6,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.unit.dp
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.clickable
 
-// @Composable = this function describes UI (like SwiftUI's View)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IssueListScreen(
@@ -20,7 +22,6 @@ fun IssueListScreen(
 ) {
     val issues by viewModel.issues.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    // collectAsState() = observe Flow changes (like SwiftUI's @State)
 
     Scaffold(
         topBar = {
@@ -34,7 +35,7 @@ fun IssueListScreen(
             }
         }
     ) { padding ->
-        when { // when = Kotlin's switch statement
+        when {
             isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(padding),
@@ -52,7 +53,6 @@ fun IssueListScreen(
                 }
             }
             else -> {
-                // LazyColumn = scrollable list (like SwiftUI's List)
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentPadding = PaddingValues(16.dp),
@@ -69,54 +69,82 @@ fun IssueListScreen(
 
 @Composable
 fun IssueCard(issue: Issue) {
+    var showFullScreenPhoto by remember { mutableStateOf(false) }
+    val hasPhoto = issue.photoPath.isNotEmpty()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Show photo if exists
-            if (issue.photoPath.isNotEmpty()) {
-                // Simple image display - in production you'd use Coil or Glide
-                Text(
-                    text = "📷 Photo attached",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+        if (hasPhoto) {
+            // Layout WITH photo - Row with thumbnail on left
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                IssueImage(
+                    photoPath = issue.photoPath,
+                    contentDescription = "Issue photo",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showFullScreenPhoto = true }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.width(16.dp))
+
+                IssueDetails(issue = issue, modifier = Modifier.weight(1f))
             }
 
-            Text(
-                text = issue.flatNumber,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = issue.description,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = issue.status.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = when(issue.status) {
-                        com.hajducakmarek.fixit.models.IssueStatus.OPEN ->
-                            MaterialTheme.colorScheme.error
-                        com.hajducakmarek.fixit.models.IssueStatus.IN_PROGRESS ->
-                            MaterialTheme.colorScheme.tertiary
-                        com.hajducakmarek.fixit.models.IssueStatus.FIXED ->
-                            MaterialTheme.colorScheme.primary
-                        com.hajducakmarek.fixit.models.IssueStatus.VERIFIED ->
-                            MaterialTheme.colorScheme.secondary
-                    }
+            // Only show dialog if photo exists AND user clicked
+            if (showFullScreenPhoto) {
+                FullScreenPhotoDialog(
+                    photoPath = issue.photoPath,
+                    onDismiss = { showFullScreenPhoto = false }
                 )
             }
+        } else {
+            // Layout WITHOUT photo - Full width content
+            IssueDetails(
+                issue = issue,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
+            // No dialog possible here - no photo to click!
         }
+    }
+}
+
+@Composable
+private fun IssueDetails(issue: Issue, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = issue.flatNumber,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = issue.description,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = issue.status.name.replace("_", " "),
+            style = MaterialTheme.typography.labelSmall,
+            color = when(issue.status) {
+                com.hajducakmarek.fixit.models.IssueStatus.OPEN ->
+                    MaterialTheme.colorScheme.error
+                com.hajducakmarek.fixit.models.IssueStatus.IN_PROGRESS ->
+                    MaterialTheme.colorScheme.tertiary
+                com.hajducakmarek.fixit.models.IssueStatus.FIXED ->
+                    MaterialTheme.colorScheme.primary
+                com.hajducakmarek.fixit.models.IssueStatus.VERIFIED ->
+                    MaterialTheme.colorScheme.secondary
+            }
+        )
     }
 }

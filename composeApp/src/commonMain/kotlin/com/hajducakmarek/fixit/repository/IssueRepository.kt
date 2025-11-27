@@ -16,7 +16,6 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
     // suspend = async
     suspend fun getAllIssues(): List<Issue> {
         return dbQuery.selectAllIssues().executeAsList().map { dbIssue ->
-            // Convert database Issue to our model Issue
             Issue(
                 id = dbIssue.id,
                 photoPath = dbIssue.photoPath,
