@@ -95,6 +95,52 @@ ConstructionIssueTracker/
 └── iosApp/                  # iOS app wrapper
 ```
 
+## 🧪 Testing
+
+### Running Tests
+```bash
+# Run all tests
+./gradlew :composeApp:testDebugUnitTest
+
+# Run with verbose output
+./gradlew :composeApp:testDebugUnitTest --info
+```
+
+### Current Test Coverage
+
+- ✅ **Models**: Data class creation, copy functionality, enum validation (3 tests)
+- 🚧 **Repository**: Coming soon with proper mocking
+- 🚧 **ViewModels**: Coming soon with test utilities
+
+### Writing Tests
+
+Tests are in `composeApp/src/commonTest/kotlin/`
+
+Example:
+```kotlin
+import kotlin.test.*
+
+class MyTest {
+    @Test
+    fun `test description`() {
+        // Given
+        val input = "test"
+        
+        // When
+        val result = input.uppercase()
+        
+        // Then
+        assertEquals("TEST", result)
+    }
+}
+```
+
+### Next Steps
+
+- Add repository tests with in-memory database
+- Add ViewModel tests with fake repositories
+- Increase coverage to 80%+
+
 ## 🚀 Getting Started
 
 ### Prerequisites

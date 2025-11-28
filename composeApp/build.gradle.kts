@@ -16,7 +16,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -24,6 +24,9 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+
+            // Export all dependencies to iOS
+            export(libs.kotlinx.datetime)
         }
     }
     
@@ -65,11 +68,19 @@ kotlin {
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)
         }
-        
+
         iosMain.dependencies {
             // iOS-specific
             implementation(libs.ktor.client.darwin)
             implementation(libs.sqldelight.native.driver)
+
+            // Export datetime for iOS framework
+            api(libs.kotlinx.datetime)
+        }
+
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

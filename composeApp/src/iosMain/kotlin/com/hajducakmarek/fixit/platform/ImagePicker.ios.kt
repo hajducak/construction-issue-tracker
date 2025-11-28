@@ -1,19 +1,23 @@
 package com.hajducakmarek.fixit.platform
 
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import platform.UIKit.*
+import platform.Foundation.*
+import kotlinx.cinterop.*
+import platform.darwin.NSObject
 
 actual class ImagePicker {
     private var onImagePickedCallback: ((String?) -> Unit)? = null
-
     actual var showCamera by mutableStateOf(false)
         private set
 
     actual fun pickImage(onImagePicked: (String?) -> Unit) {
         this.onImagePickedCallback = onImagePicked
-        // iOS implementation later - for now just simulate
-        onImagePickedCallback?.invoke("/ios/photo_${System.currentTimeMillis()}.jpg")
+        // For now, simulate photo capture
+        // Real UIImagePickerController requires more setup
+        val timestamp = platform.Foundation.NSDate().timeIntervalSince1970.toLong()
+        val photoPath = "/tmp/photo_$timestamp.jpg"
+        onImagePicked(photoPath)
     }
 
     actual fun onPhotoCaptured(path: String?) {

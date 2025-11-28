@@ -5,7 +5,7 @@ import com.hajducakmarek.fixit.database.FixItDatabase
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 
-class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
+open class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
     // Create database instance
     private val database = FixItDatabase(databaseDriverFactory.createDriver())
 
@@ -14,7 +14,7 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
 
     // Get all issues from database
     // suspend = async
-    suspend fun getAllIssues(): List<Issue> {
+    open suspend fun getAllIssues(): List<Issue> {
         return dbQuery.selectAllIssues().executeAsList().map { dbIssue ->
             Issue(
                 id = dbIssue.id,
@@ -45,7 +45,7 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
         )
     }
 
-    suspend fun getIssueById(id: String): Issue? {
+    open suspend fun getIssueById(id: String): Issue? {
         val dbIssue = dbQuery.selectIssueById(id).executeAsOneOrNull() ?: return null
 
         return Issue(
