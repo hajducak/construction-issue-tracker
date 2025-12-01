@@ -51,6 +51,11 @@ fun App(
 ) {
     MaterialTheme {
         val repository = remember { IssueRepository(databaseDriverFactory) }
+
+        // Create ViewModels OUTSIDE the when statement so they persist
+        val listViewModel = remember { IssueListViewModel(repository) }
+        val workerListViewModel = remember { WorkerListViewModel(repository) }
+
         var currentScreen by remember { mutableStateOf<Screen>(Screen.Issues) }
         var selectedTab by remember { mutableStateOf(BottomNavItem.ISSUES) }
 
@@ -91,10 +96,8 @@ fun App(
             Box(modifier = Modifier.padding(innerPadding)) {
                 when (val screen = currentScreen) {
                     is Screen.Issues -> {
-                        val listViewModel = remember { IssueListViewModel(repository) }
-
                         IssueListScreen(
-                            viewModel = listViewModel,
+                            viewModel = listViewModel,  // Reuse same instance
                             onAddClick = { currentScreen = Screen.Create },
                             onIssueClick = { issue ->
                                 currentScreen = Screen.IssueDetail(issue.id)
@@ -103,10 +106,8 @@ fun App(
                     }
 
                     is Screen.Workers -> {
-                        val workerListViewModel = remember { WorkerListViewModel(repository) }
-
                         WorkerListScreen(
-                            viewModel = workerListViewModel,
+                            viewModel = workerListViewModel,  // Reuse same instance
                             onAddClick = { currentScreen = Screen.AddWorker },
                             onWorkerClick = { worker ->
                                 // Future: worker detail screen
@@ -122,6 +123,7 @@ fun App(
                             onNavigateBack = {
                                 currentScreen = Screen.Issues
                                 selectedTab = BottomNavItem.ISSUES
+                                listViewModel.loadIssues()  // Refresh list
                             },
                             onTakePhoto = { callback ->
                                 imagePicker.pickImage(callback)
@@ -139,6 +141,7 @@ fun App(
                             onNavigateBack = {
                                 currentScreen = Screen.Issues
                                 selectedTab = BottomNavItem.ISSUES
+                                listViewModel.loadIssues()  // Refresh list but keep filters
                             }
                         )
                     }
@@ -151,6 +154,7 @@ fun App(
                             onNavigateBack = {
                                 currentScreen = Screen.Workers
                                 selectedTab = BottomNavItem.WORKERS
+                                workerListViewModel.loadWorkers()  // Refresh workers
                             }
                         )
                     }

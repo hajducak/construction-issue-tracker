@@ -1,18 +1,19 @@
 package com.hajducakmarek.fixit.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,11 +24,21 @@ fun IssueListScreen(
 ) {
     val issues by viewModel.issues.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val selectedStatus by viewModel.selectedStatus.collectAsState()
+    val selectedWorker by viewModel.selectedWorker.collectAsState()
+    val workers by viewModel.workers.collectAsState()
+    val activeFilterCount by viewModel.activeFilterCount.collectAsState()
+
+    // Refresh when screen appears
+    LaunchedEffect(Unit) {
+        viewModel.loadIssues()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Issues") },
+                title = { Text("Issues") }
             )
         },
         floatingActionButton = {
@@ -36,34 +47,65 @@ fun IssueListScreen(
             }
         }
     ) { padding ->
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Search bar
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = viewModel::onSearchQueryChanged,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            // Filter chips
+            FilterChipsRow(
+                selectedStatus = selectedStatus,
+                selectedWorker = selectedWorker,
+                workers = workers,
+                activeFilterCount = activeFilterCount,
+                onStatusClick = viewModel::onStatusFilterChanged,
+                onWorkerClick = viewModel::onWorkerFilterChanged,
+                onClearFilters = viewModel::clearFilters,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            // Issues list
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            issues.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    Text("No issues yet. Tap + to create one.")
-                }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(issues) { issue ->
-                        IssueCard(
-                            issue = issue,
-                            onClick = { onIssueClick(issue) }
+                issues.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (activeFilterCount > 0) {
+                                "No issues match your filters"
+                            } else {
+                                "No issues yet. Tap + to create one."
+                            }
                         )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(issues) { issue ->
+                            IssueCard(
+                                issue = issue,
+                                onClick = { onIssueClick(issue) }
+                            )
+                        }
                     }
                 }
             }
@@ -86,7 +128,6 @@ fun IssueCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         if (hasPhoto) {
-            // Layout WITH photo - Row with thumbnail on left
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -105,7 +146,6 @@ fun IssueCard(
                 IssueDetails(issue = issue, modifier = Modifier.weight(1f))
             }
 
-            // Only show dialog if photo exists AND user clicked
             if (showFullScreenPhoto) {
                 FullScreenPhotoDialog(
                     photoPath = issue.photoPath,
@@ -113,14 +153,12 @@ fun IssueCard(
                 )
             }
         } else {
-            // Layout WITHOUT photo - Full width content
             IssueDetails(
                 issue = issue,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
             )
-            // No dialog possible here - no photo to click!
         }
     }
 }
