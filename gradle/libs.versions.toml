@@ -22,6 +22,7 @@ sqldelight = "2.0.2"
 accompanist = "0.32.0"
 coil = "2.5.0"
 kotlin-test = "1.9.20"
+uuid = "0.8.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin-test" }
@@ -39,7 +40,7 @@ androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", nam
 androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
-
+uuid = { module = "com.benasher44:uuid", version.ref = "uuid" }
 
 # Kotlinx libraries
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }

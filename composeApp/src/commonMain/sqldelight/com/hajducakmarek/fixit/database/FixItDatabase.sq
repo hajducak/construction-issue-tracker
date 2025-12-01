@@ -1,13 +1,13 @@
--- User table
+-- User Table
 CREATE TABLE User (
-    id TEXT NOT NULL PRIMARY KEY,
+    id TEXT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
     role TEXT NOT NULL
 );
 
--- Issue table
+-- Issue Table
 CREATE TABLE Issue (
-    id TEXT NOT NULL PRIMARY KEY,
+    id TEXT PRIMARY KEY NOT NULL,
     photoPath TEXT NOT NULL,
     description TEXT NOT NULL,
     flatNumber TEXT NOT NULL,
@@ -15,21 +15,10 @@ CREATE TABLE Issue (
     createdBy TEXT NOT NULL,
     assignedTo TEXT,
     createdAt INTEGER NOT NULL,
-    completedAt INTEGER,
-    FOREIGN KEY (createdBy) REFERENCES User(id),
-    FOREIGN KEY (assignedTo) REFERENCES User(id)
+    completedAt INTEGER
 );
 
--- Queries
-selectAllUsers:
-SELECT * FROM User;
-
-selectUserById:
-SELECT * FROM User WHERE id = ?;
-
-insertUser:
-INSERT INTO User(id, name, role) VALUES (?, ?, ?);
-
+-- Issue Queries
 selectAllIssues:
 SELECT * FROM Issue;
 
@@ -52,3 +41,17 @@ updateIssueAssignment:
 UPDATE Issue
 SET assignedTo = :assignedTo
 WHERE id = :id;
+
+-- User Queries
+selectAllUsers:
+SELECT * FROM User;
+
+selectUserById:
+SELECT * FROM User WHERE id = ?;
+
+selectUsersByRole:
+SELECT * FROM User WHERE role = ?;
+
+insertUser:
+INSERT INTO User(id, name, role)
+VALUES (?, ?, ?);

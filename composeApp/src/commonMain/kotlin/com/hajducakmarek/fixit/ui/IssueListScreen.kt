@@ -27,7 +27,7 @@ fun IssueListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Issues") }
+                title = { Text("Issues") },
             )
         },
         floatingActionButton = {
