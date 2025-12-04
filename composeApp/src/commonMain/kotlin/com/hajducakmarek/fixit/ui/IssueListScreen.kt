@@ -14,13 +14,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
+import com.hajducakmarek.fixit.models.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IssueListScreen(
     viewModel: IssueListViewModel,
+    currentUser: com.hajducakmarek.fixit.models.User,
     onAddClick: () -> Unit = {},
-    onIssueClick: (Issue) -> Unit = {}
+    onIssueClick: (Issue) -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val issues by viewModel.issues.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -38,12 +41,25 @@ fun IssueListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Issues") }
+                title = { Text("Issues") },
+                actions = {
+                    // Show current user
+                    Text(
+                        text = "${currentUser.name} (${currentUser.role.name})",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    IconButton(onClick = onLogout) {
+                        Text("🚪")  // Logout icon
+                    }
+                }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddClick) {
-                Text("+")
+            if (currentUser.role == com.hajducakmarek.fixit.models.UserRole.MANAGER) {
+                FloatingActionButton(onClick = onAddClick) {
+                    Text("+")
+                }
             }
         }
     ) { padding ->
@@ -63,7 +79,7 @@ fun IssueListScreen(
             FilterChipsRow(
                 selectedStatus = selectedStatus,
                 selectedWorker = selectedWorker,
-                workers = workers,
+                workers = if (currentUser.role == UserRole.MANAGER) workers else emptyList(),  // Hide for workers
                 activeFilterCount = activeFilterCount,
                 onStatusClick = viewModel::onStatusFilterChanged,
                 onWorkerClick = viewModel::onWorkerFilterChanged,
@@ -86,13 +102,20 @@ fun IssueListScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (activeFilterCount > 0) {
-                                "No issues match your filters"
-                            } else {
-                                "No issues yet. Tap + to create one."
-                            }
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = when {
+                                    activeFilterCount > 0 -> "No issues match your filters"
+                                    currentUser.role == UserRole.WORKER -> "No issues assigned to you yet"
+                                    else -> "No issues yet. Tap + to create one."
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
                     }
                 }
                 else -> {

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
+import com.hajducakmarek.fixit.models.UserRole
 import com.hajducakmarek.fixit.repository.IssueRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 
 class IssueListViewModel(
-    private val repository: IssueRepository
+    private val repository: IssueRepository,
+    private val currentUser: User
 ) : ViewModel() {
 
     // All issues from database
@@ -106,6 +108,12 @@ class IssueListViewModel(
 
     private fun applyFilters() {
         var filtered = _allIssues.value
+
+        // ROLE-BASED FILTERING - Workers only see their assigned issues
+        if (currentUser.role == UserRole.WORKER) {
+            filtered = filtered.filter { it.assignedTo == currentUser.id }
+        }
+        // Managers see all issues (no filtering needed)
 
         // Filter by status
         _selectedStatus.value?.let { status ->

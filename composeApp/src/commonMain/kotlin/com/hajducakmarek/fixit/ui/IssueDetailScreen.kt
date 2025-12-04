@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
+import com.hajducakmarek.fixit.models.UserRole
 import com.hajducakmarek.fixit.viewmodel.IssueDetailViewModel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -21,6 +22,7 @@ import kotlinx.datetime.toLocalDateTime
 @Composable
 fun IssueDetailScreen(
     viewModel: IssueDetailViewModel,
+    currentUser: User,
     onNavigateBack: () -> Unit
 ) {
     val issue by viewModel.issue.collectAsState()
@@ -98,12 +100,16 @@ fun IssueDetailScreen(
                     issue = issue!!,
                     assignedWorker = assignedWorker,
                     isSaving = isSaving,
+                    canEdit = currentUser.role == UserRole.MANAGER,
                     onStatusChange = { newStatus ->
                         pendingStatus = newStatus
                         showConfirmDialog = true
                     },
                     onAssignWorker = {
-                        showWorkerDialog = true
+                        // Only managers can assign workers
+                        if (currentUser.role == UserRole.MANAGER) {
+                            showWorkerDialog = true
+                        }
                     },
                     modifier = Modifier
                         .fillMaxSize()
@@ -164,6 +170,7 @@ private fun IssueDetailContent(
     issue: Issue,
     assignedWorker: User?,
     isSaving: Boolean,
+    canEdit: Boolean,
     onStatusChange: (IssueStatus) -> Unit,
     onAssignWorker: () -> Unit,
     modifier: Modifier = Modifier
@@ -221,13 +228,16 @@ private fun IssueDetailContent(
         StatusSelector(
             currentStatus = issue.status,
             isSaving = isSaving,
-            onStatusChange = onStatusChange
+            enabled = canEdit || (issue.status == IssueStatus.OPEN || issue.status == IssueStatus.IN_PROGRESS),
+            onStatusChange = onStatusChange,
+            isManager = canEdit
         )
 
         // Assigned Worker
         Card(
             modifier = Modifier.fillMaxWidth(),
-            onClick = onAssignWorker
+            onClick = onAssignWorker,
+            enabled = canEdit
         ) {
             Row(
                 modifier = Modifier
@@ -251,9 +261,17 @@ private fun IssueDetailContent(
                             MaterialTheme.colorScheme.onSurfaceVariant
                         }
                     )
+                    if (!canEdit && assignedWorker == null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Only managers can assign workers",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
                 Text(
-                    text = if (assignedWorker != null) "👷" else "➕",
+                    text = if (assignedWorker != null) "👷" else if (canEdit) "➕" else "🔒",
                     style = MaterialTheme.typography.headlineMedium
                 )
             }
@@ -282,7 +300,9 @@ private fun IssueDetailContent(
 private fun StatusSelector(
     currentStatus: IssueStatus,
     isSaving: Boolean,
-    onStatusChange: (IssueStatus) -> Unit
+    enabled: Boolean = true,
+    onStatusChange: (IssueStatus) -> Unit,
+    isManager: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -297,7 +317,7 @@ private fun StatusSelector(
 
             ExposedDropdownMenuBox(
                 expanded = expanded,
-                onExpandedChange = { expanded = !expanded && !isSaving }
+                onExpandedChange = { expanded = !expanded && !isSaving && enabled }
             ) {
                 OutlinedTextField(
                     value = currentStatus.name.replace("_", " "),
@@ -313,7 +333,7 @@ private fun StatusSelector(
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(),
-                    enabled = !isSaving,
+                    enabled = enabled && !isSaving,
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
                         disabledBorderColor = MaterialTheme.colorScheme.outline
@@ -324,21 +344,80 @@ private fun StatusSelector(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    IssueStatus.entries.forEach { status ->
+                    // Filter statuses based on role
+                    val availableStatuses = if (isManager) {
+                        IssueStatus.entries  // Manager sees all statuses
+                    } else {
+                        // Worker: show VERIFIED only if it's current status
+                        IssueStatus.entries.filter { status ->
+                            status != IssueStatus.VERIFIED || status == currentStatus
+                        }
+                    }
+
+                    availableStatuses.forEach { status ->
+                        val isCurrentStatus = status == currentStatus
+
+                        // Determine if worker can select this status
+                        val canWorkerSelect = when (currentStatus) {
+                            IssueStatus.OPEN -> status == IssueStatus.IN_PROGRESS
+                            IssueStatus.IN_PROGRESS -> status == IssueStatus.FIXED
+                            IssueStatus.FIXED -> false  // Worker can't change from FIXED
+                            IssueStatus.VERIFIED -> false  // Can't change from VERIFIED
+                        }
+
+                        val canSelect = if (isManager) {
+                            !isCurrentStatus  // Manager can select any except current
+                        } else {
+                            canWorkerSelect  // Worker has restrictions
+                        }
+
                         DropdownMenuItem(
-                            text = { Text(status.name.replace("_", " ")) },
+                            text = {
+                                Text(
+                                    text = status.name.replace("_", " "),
+                                    color = if (canSelect) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    }
+                                )
+                            },
                             onClick = {
-                                onStatusChange(status)
-                                expanded = false
+                                if (canSelect) {
+                                    onStatusChange(status)
+                                    expanded = false
+                                }
                             },
                             leadingIcon = {
-                                if (status == currentStatus) {
+                                if (isCurrentStatus) {
                                     Text("✓")
                                 }
-                            }
+                            },
+                            enabled = canSelect
                         )
                     }
                 }
+            }
+
+            if (!enabled) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Contact manager to change status",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            } else if (!isManager) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = when (currentStatus) {
+                        IssueStatus.OPEN -> "You can mark as IN PROGRESS"
+                        IssueStatus.IN_PROGRESS -> "You can mark as FIXED"
+                        IssueStatus.FIXED -> "Manager must verify issue"
+                        IssueStatus.VERIFIED -> "Issue completed"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

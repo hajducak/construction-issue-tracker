@@ -32,6 +32,19 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **Filter Persistence** across navigation and tab switches
 - **Empty States** with contextual messages
 
+#### Authentication & User Roles (Session 11)
+- **User Login System** with profile selection
+- **Session Management** with UserSession (expect/actual pattern)
+- **Role-Based Permissions** (Manager vs Worker)
+- **Manager Capabilities**: Create issues, assign workers, manage all issues, change any status
+- **Worker Capabilities**: View assigned issues only, update status (OPEN→IN_PROGRESS→FIXED)
+- **Worker Assignment During Creation** (optional dropdown)
+- **Logout Functionality** with session clearing
+- **Current User Display** in top app bar
+- **Status Flow Restrictions**: Workers can only progress forward (OPEN→IN_PROGRESS→FIXED), managers have full control
+- **Filtered Issue Lists**: Workers see only their assigned issues, managers see all
+- **Session Persistence**: Login state saved across app restarts
+
 #### Navigation & UX
 - **Bottom Navigation Bar** (iOS-style) with Issues and Workers tabs
 - **Material Design 3** UI throughout
@@ -305,6 +318,18 @@ class IssueTest {
 - Active filter count with derived state
 - Clear all functionality
 - Empty state handling
+
+### Session 11: Authentication & User Roles ✅
+**What:** Login system with role-based permissions  
+**Learned:**
+- expect/actual for platform-specific storage (SharedPreferences/UserDefaults)
+- Serialization with kotlinx.serialization
+- Session management patterns
+- Role-based UI rendering
+- Permission systems and access control
+- Status workflow restrictions
+- Conditional navigation (hide tabs based on role)
+- User context propagation through ViewModels
 
 ---
 
