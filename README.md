@@ -45,6 +45,21 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **Filtered Issue Lists**: Workers see only their assigned issues, managers see all
 - **Session Persistence**: Login state saved across app restarts
 
+#### Data Validation & Error Handling (Session 12)
+- **Input Validation** for all forms with real-time feedback
+- **Flat Number Validation**: Format enforcement (A-101) with auto-uppercase
+- **Description Validation**: Minimum 10 characters, maximum 500 with character counter
+- **Worker Name Validation**: Minimum 2 characters, maximum 50
+- **Inline Error Messages** below input fields with red highlighting
+- **Error State Management** in all ViewModels
+- **Database Error Handling** with user-friendly error messages
+- **Snackbar Notifications** for save errors and critical failures
+- **Error Clearing** on user input for better UX
+- **Repository Error Wrapping** with context-specific messages
+- **Validation Helpers** in centralized utils class
+- **Form Validation** before save operations
+- **Loading States** with error recovery options
+
 #### Navigation & UX
 - **Bottom Navigation Bar** (iOS-style) with Issues and Workers tabs
 - **Material Design 3** UI throughout
@@ -330,6 +345,12 @@ class IssueTest {
 - Status workflow restrictions
 - Conditional navigation (hide tabs based on role)
 - User context propagation through ViewModels
+
+### Validation & Error Handling
+- **Regex Validation**: Flat number format enforcement
+- **State-based Errors**: Real-time validation feedback
+- **Snackbar Messages**: Non-intrusive error display
+- **Error Recovery**: User-friendly retry mechanisms
 
 ---
 

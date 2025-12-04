@@ -7,133 +7,155 @@ import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
 
-open class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
-    // Create database instance
+class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
     private val database = FixItDatabase(databaseDriverFactory.createDriver())
-
-    // Get SQLDelight's generated query methods
     private val dbQuery = database.fixItDatabaseQueries
 
-    // Get all issues from database
-    // suspend = async
-    open suspend fun getAllIssues(): List<Issue> {
-        return dbQuery.selectAllIssues().executeAsList().map { dbIssue ->
-            Issue(
-                id = dbIssue.id,
-                photoPath = dbIssue.photoPath,
-                description = dbIssue.description,
-                flatNumber = dbIssue.flatNumber,
-                status = IssueStatus.valueOf(dbIssue.status),
-                createdBy = dbIssue.createdBy,
-                assignedTo = dbIssue.assignedTo,
-                createdAt = dbIssue.createdAt,
-                completedAt = dbIssue.completedAt
-            )
+    suspend fun getAllIssues(): List<Issue> {
+        return try {
+            dbQuery.selectAllIssues().executeAsList().map { issue ->
+                Issue(
+                    id = issue.id,
+                    photoPath = issue.photoPath,
+                    description = issue.description,
+                    flatNumber = issue.flatNumber,
+                    status = IssueStatus.valueOf(issue.status),
+                    createdBy = issue.createdBy,
+                    assignedTo = issue.assignedTo,
+                    createdAt = issue.createdAt,
+                    completedAt = issue.completedAt
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load issues from database", e)
         }
     }
 
-    // Save a new issue
-    suspend fun insertIssue(issue: Issue) {
-        dbQuery.insertIssue(
-            id = issue.id,
-            photoPath = issue.photoPath,
-            description = issue.description,
-            flatNumber = issue.flatNumber,
-            status = issue.status.name,  // Enum to String
-            createdBy = issue.createdBy,
-            assignedTo = issue.assignedTo,
-            createdAt = issue.createdAt,
-            completedAt = issue.completedAt
-        )
+    suspend fun getIssueById(id: String): Issue? {
+        return try {
+            dbQuery.selectIssueById(id).executeAsOneOrNull()?.let { issue ->
+                Issue(
+                    id = issue.id,
+                    photoPath = issue.photoPath,
+                    description = issue.description,
+                    flatNumber = issue.flatNumber,
+                    status = IssueStatus.valueOf(issue.status),
+                    createdBy = issue.createdBy,
+                    assignedTo = issue.assignedTo,
+                    createdAt = issue.createdAt,
+                    completedAt = issue.completedAt
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load issue details", e)
+        }
     }
 
-    open suspend fun getIssueById(id: String): Issue? {
-        val dbIssue = dbQuery.selectIssueById(id).executeAsOneOrNull() ?: return null
-
-        return Issue(
-            id = dbIssue.id,
-            photoPath = dbIssue.photoPath,
-            description = dbIssue.description,
-            flatNumber = dbIssue.flatNumber,
-            status = IssueStatus.valueOf(dbIssue.status),
-            createdBy = dbIssue.createdBy,
-            assignedTo = dbIssue.assignedTo,
-            createdAt = dbIssue.createdAt,
-            completedAt = dbIssue.completedAt
-        )
+    suspend fun insertIssue(issue: Issue) {
+        try {
+            dbQuery.insertIssue(
+                id = issue.id,
+                photoPath = issue.photoPath,
+                description = issue.description,
+                flatNumber = issue.flatNumber,
+                status = issue.status.name,
+                createdBy = issue.createdBy,
+                assignedTo = issue.assignedTo,
+                createdAt = issue.createdAt,
+                completedAt = issue.completedAt
+            )
+        } catch (e: Exception) {
+            throw Exception("Failed to create issue", e)
+        }
     }
 
     suspend fun updateIssueStatus(issueId: String, status: IssueStatus) {
-        dbQuery.updateIssueStatus(
-            status = status.name,
-            id = issueId
-        )
-    }
-
-    suspend fun seedUsers() {
-        // Check if users already exist
-        val existingUsers = dbQuery.selectAllUsers().executeAsList()
-        if (existingUsers.isEmpty()) {
-            // Add default users
-            dbQuery.insertUser(
-                id = "user-1",
-                name = "John Smith",
-                role = "MANAGER"
+        try {
+            dbQuery.updateIssueStatus(
+                status = status.name,
+                id = issueId
             )
-            dbQuery.insertUser(
-                id = "user-2",
-                name = "Mike Johnson",
-                role = "WORKER"
-            )
-            dbQuery.insertUser(
-                id = "user-3",
-                name = "Sarah Williams",
-                role = "WORKER"
-            )
-        }
-    }
-
-    suspend fun getAllUsers(): List<User> {
-        return dbQuery.selectAllUsers().executeAsList().map { dbUser ->
-            User(
-                id = dbUser.id,
-                name = dbUser.name,
-                role = UserRole.valueOf(dbUser.role)
-            )
-        }
-    }
-
-    suspend fun getUserById(id: String): User? {
-        val dbUser = dbQuery.selectUserById(id).executeAsOneOrNull() ?: return null
-        return User(
-            id = dbUser.id,
-            name = dbUser.name,
-            role = UserRole.valueOf(dbUser.role)
-        )
-    }
-
-    suspend fun insertUser(user: User) {
-        dbQuery.insertUser(
-            id = user.id,
-            name = user.name,
-            role = user.role.name
-        )
-    }
-
-    suspend fun getWorkers(): List<User> {
-        return dbQuery.selectUsersByRole("WORKER").executeAsList().map { dbUser ->
-            User(
-                id = dbUser.id,
-                name = dbUser.name,
-                role = UserRole.valueOf(dbUser.role)
-            )
+        } catch (e: Exception) {
+            throw Exception("Failed to update issue status", e)
         }
     }
 
     suspend fun updateIssueAssignment(issueId: String, workerId: String?) {
-        dbQuery.updateIssueAssignment(
-            assignedTo = workerId,
-            id = issueId
-        )
+        try {
+            dbQuery.updateIssueAssignment(
+                assignedTo = workerId,
+                id = issueId
+            )
+        } catch (e: Exception) {
+            throw Exception("Failed to assign worker", e)
+        }
+    }
+
+    // User operations
+    suspend fun seedUsers() {
+        try {
+            val existingUsers = dbQuery.selectAllUsers().executeAsList()
+            if (existingUsers.isEmpty()) {
+                dbQuery.insertUser("manager-1", "John Smith", UserRole.MANAGER.name)
+                dbQuery.insertUser("worker-1", "Mike Johnson", UserRole.WORKER.name)
+                dbQuery.insertUser("worker-2", "Sarah Williams", UserRole.WORKER.name)
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to seed users", e)
+        }
+    }
+
+    suspend fun getAllUsers(): List<User> {
+        return try {
+            dbQuery.selectAllUsers().executeAsList().map { user ->
+                User(
+                    id = user.id,
+                    name = user.name,
+                    role = UserRole.valueOf(user.role)
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load users", e)
+        }
+    }
+
+    suspend fun getUserById(id: String): User? {
+        return try {
+            dbQuery.selectUserById(id).executeAsOneOrNull()?.let { user ->
+                User(
+                    id = user.id,
+                    name = user.name,
+                    role = UserRole.valueOf(user.role)
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load user details", e)
+        }
+    }
+
+    suspend fun insertUser(user: User) {
+        try {
+            dbQuery.insertUser(
+                id = user.id,
+                name = user.name,
+                role = user.role.name
+            )
+        } catch (e: Exception) {
+            throw Exception("Failed to add user", e)
+        }
+    }
+
+    suspend fun getWorkers(): List<User> {
+        return try {
+            dbQuery.selectUsersByRole(UserRole.WORKER.name).executeAsList().map { user ->
+                User(
+                    id = user.id,
+                    name = user.name,
+                    role = UserRole.valueOf(user.role)
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load workers", e)
+        }
     }
 }

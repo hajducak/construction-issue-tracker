@@ -30,6 +30,7 @@ fun IssueDetailScreen(
     val isSaving by viewModel.isSaving.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val assignedWorker by viewModel.assignedWorker.collectAsState()
+    val error by viewModel.error.collectAsState()  // Add this
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -39,6 +40,17 @@ fun IssueDetailScreen(
 
     var showWorkerDialog by remember { mutableStateOf(false) }
     var pendingWorker by remember { mutableStateOf<User?>(null) }
+
+    // Show error in snackbar
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearError()
+        }
+    }
 
     LaunchedEffect(showSuccessToast) {
         if (showSuccessToast) {
@@ -67,8 +79,16 @@ fun IssueDetailScreen(
                 snackbar = { data ->
                     Snackbar(
                         snackbarData = data,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        containerColor = if (error != null) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer
+                        },
+                        contentColor = if (error != null) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        }
                     )
                 }
             )
@@ -92,7 +112,18 @@ fun IssueDetailScreen(
                         .padding(padding),
                     contentAlignment = androidx.compose.ui.Alignment.Center
                 ) {
-                    Text("Issue not found")
+                    Column(
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "Issue not found",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Button(onClick = onNavigateBack) {
+                            Text("Go Back")
+                        }
+                    }
                 }
             }
             else -> {
@@ -106,7 +137,6 @@ fun IssueDetailScreen(
                         showConfirmDialog = true
                     },
                     onAssignWorker = {
-                        // Only managers can assign workers
                         if (currentUser.role == UserRole.MANAGER) {
                             showWorkerDialog = true
                         }

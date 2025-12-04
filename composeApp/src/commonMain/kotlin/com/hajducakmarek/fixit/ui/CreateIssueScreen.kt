@@ -26,6 +26,21 @@ fun CreateIssueScreen(
     val isSaving by viewModel.isSaving.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val selectedWorker by viewModel.selectedWorker.collectAsState()
+    // Error states
+    val flatNumberError by viewModel.flatNumberError.collectAsState()
+    val descriptionError by viewModel.descriptionError.collectAsState()
+    val saveError by viewModel.saveError.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    // Show save error in snackbar
+    LaunchedEffect(saveError) {
+        saveError?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Long
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -37,7 +52,8 @@ fun CreateIssueScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -47,7 +63,7 @@ fun CreateIssueScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Flat number input
+            // Flat number input with validation
             OutlinedTextField(
                 value = flatNumber,
                 onValueChange = viewModel::onFlatNumberChanged,
@@ -55,10 +71,19 @@ fun CreateIssueScreen(
                 placeholder = { Text("e.g., A-101") },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isSaving,
-                singleLine = true
+                singleLine = true,
+                isError = flatNumberError != null,
+                supportingText = {
+                    flatNumberError?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             )
 
-            // Description input
+            // Description input with validation
             OutlinedTextField(
                 value = description,
                 onValueChange = viewModel::onDescriptionChanged,
@@ -68,7 +93,21 @@ fun CreateIssueScreen(
                     .fillMaxWidth()
                     .height(150.dp),
                 enabled = !isSaving,
-                maxLines = 6
+                maxLines = 6,
+                isError = descriptionError != null,
+                supportingText = {
+                    if (descriptionError != null) {
+                        Text(
+                            text = descriptionError!!,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Text(
+                            text = "${description.length}/500 characters",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             )
 
             // Photo section
@@ -108,11 +147,11 @@ fun CreateIssueScreen(
             Button(
                 onClick = {
                     viewModel.saveIssue(
-                        createdBy = currentUser.id,  // Use actual logged-in user
+                        createdBy = currentUser.id,
                         onSuccess = onNavigateBack
                     )
                 },
-                enabled = !isSaving && flatNumber.isNotBlank() && description.isNotBlank(),
+                enabled = !isSaving,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (isSaving) {

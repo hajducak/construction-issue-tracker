@@ -27,13 +27,26 @@ fun IssueListScreen(
 ) {
     val issues by viewModel.issues.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val loadError by viewModel.loadError.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedStatus by viewModel.selectedStatus.collectAsState()
     val selectedWorker by viewModel.selectedWorker.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val activeFilterCount by viewModel.activeFilterCount.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     // Refresh when screen appears
+    LaunchedEffect(loadError) {
+        loadError?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearError()
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadIssues()
     }
@@ -43,25 +56,25 @@ fun IssueListScreen(
             TopAppBar(
                 title = { Text("Issues") },
                 actions = {
-                    // Show current user
                     Text(
                         text = "${currentUser.name} (${currentUser.role.name})",
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
                     IconButton(onClick = onLogout) {
-                        Text("🚪")  // Logout icon
+                        Text("🚪")
                     }
                 }
             )
         },
         floatingActionButton = {
-            if (currentUser.role == com.hajducakmarek.fixit.models.UserRole.MANAGER) {
+            if (currentUser.role == UserRole.MANAGER) {
                 FloatingActionButton(onClick = onAddClick) {
                     Text("+")
                 }
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier

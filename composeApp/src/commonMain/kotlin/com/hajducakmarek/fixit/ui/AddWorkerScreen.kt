@@ -19,6 +19,19 @@ fun AddWorkerScreen(
     val name by viewModel.name.collectAsState()
     val selectedRole by viewModel.selectedRole.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
+    val nameError by viewModel.nameError.collectAsState()
+    val saveError by viewModel.saveError.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    // Show save error in snackbar
+    LaunchedEffect(saveError) {
+        saveError?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Long
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -30,7 +43,8 @@ fun AddWorkerScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -39,7 +53,7 @@ fun AddWorkerScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Name input
+            // Name input with validation
             OutlinedTextField(
                 value = name,
                 onValueChange = viewModel::onNameChanged,
@@ -47,7 +61,16 @@ fun AddWorkerScreen(
                 placeholder = { Text("e.g., John Smith") },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isSaving,
-                singleLine = true
+                singleLine = true,
+                isError = nameError != null,
+                supportingText = {
+                    nameError?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
             )
 
             // Role selector
@@ -62,7 +85,7 @@ fun AddWorkerScreen(
             // Save button
             Button(
                 onClick = { viewModel.saveWorker(onNavigateBack) },
-                enabled = !isSaving && name.isNotBlank(),
+                enabled = !isSaving,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (isSaving) {

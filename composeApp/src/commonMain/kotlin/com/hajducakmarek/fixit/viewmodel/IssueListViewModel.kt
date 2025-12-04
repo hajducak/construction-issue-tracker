@@ -44,6 +44,9 @@ class IssueListViewModel(
     private val _workers = MutableStateFlow<List<User>>(emptyList())
     val workers: StateFlow<List<User>> = _workers.asStateFlow()
 
+    private val _loadError = MutableStateFlow<String?>(null)
+    val loadError: StateFlow<String?> = _loadError.asStateFlow()
+
     // Active filter count
     val activeFilterCount: StateFlow<Int> = combine(
         _selectedStatus,
@@ -69,13 +72,20 @@ class IssueListViewModel(
     fun loadIssues() {
         viewModelScope.launch {
             _isLoading.value = true
+            _loadError.value = null
             try {
                 _allIssues.value = repository.getAllIssues()
                 applyFilters()
+            } catch (e: Exception) {
+                _loadError.value = "Failed to load issues: ${e.message ?: "Unknown error"}"
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun clearError() {
+        _loadError.value = null
     }
 
     private fun loadWorkers() {

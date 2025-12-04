@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
 import com.hajducakmarek.fixit.repository.IssueRepository
+import com.hajducakmarek.fixit.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,16 +25,35 @@ class AddWorkerViewModel(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
+    private val _nameError = MutableStateFlow<String?>(null)
+    val nameError: StateFlow<String?> = _nameError.asStateFlow()
+
+    private val _saveError = MutableStateFlow<String?>(null)
+    val saveError: StateFlow<String?> = _saveError.asStateFlow()
+
     fun onNameChanged(text: String) {
         _name.value = text
+        if (_nameError.value != null) {
+            _nameError.value = null
+        }
     }
 
     fun onRoleChanged(role: UserRole) {
         _selectedRole.value = role
     }
 
+    private fun validateForm(): Boolean {
+        val nameErr = Validation.getWorkerNameError(_name.value)
+        _nameError.value = nameErr
+        return nameErr == null
+    }
+
     fun saveWorker(onSuccess: () -> Unit) {
-        if (_name.value.isBlank()) return
+        _saveError.value = null
+
+        if (!validateForm()) {
+            return
+        }
 
         viewModelScope.launch {
             _isSaving.value = true
@@ -48,6 +68,7 @@ class AddWorkerViewModel(
                 onSuccess()
             } catch (e: Exception) {
                 _isSaving.value = false
+                _saveError.value = "Failed to add worker: ${e.message ?: "Unknown error"}"
             }
         }
     }

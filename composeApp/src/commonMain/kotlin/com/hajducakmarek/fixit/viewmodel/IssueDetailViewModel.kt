@@ -6,6 +6,7 @@ import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.repository.IssueRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +32,9 @@ class IssueDetailViewModel(
     private val _assignedWorker = MutableStateFlow<User?>(null)
     val assignedWorker: StateFlow<User?> = _assignedWorker.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     init {
         loadIssue()
         loadWorkers()
@@ -39,11 +43,17 @@ class IssueDetailViewModel(
     private fun loadIssue() {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
             try {
-                _issue.value = repository.getIssueById(issueId)
-                _issue.value?.assignedTo?.let { workerId ->
+                val loadedIssue = repository.getIssueById(issueId)
+                _issue.value = loadedIssue
+
+                // Load assigned worker if exists
+                loadedIssue?.assignedTo?.let { workerId ->
                     _assignedWorker.value = repository.getUserById(workerId)
                 }
+            } catch (e: Exception) {
+                _error.value = "Failed to load issue: ${e.message ?: "Unknown error"}"
             } finally {
                 _isLoading.value = false
             }
@@ -52,48 +62,50 @@ class IssueDetailViewModel(
 
     private fun loadWorkers() {
         viewModelScope.launch {
-            _workers.value = repository.getWorkers()
+            try {
+                _workers.value = repository.getWorkers()
+            } catch (e: Exception) {
+                // Silent failure for workers list - non-critical
+            }
         }
     }
 
     fun updateStatus(newStatus: IssueStatus, onSuccess: () -> Unit) {
-        val currentIssue = _issue.value ?: return
-
         viewModelScope.launch {
             _isSaving.value = true
+            _error.value = null
             try {
-                // Add small delay to show spinner
-                kotlinx.coroutines.delay(300)
-                repository.updateIssueStatus(currentIssue.id, newStatus)
-                _issue.value = currentIssue.copy(status = newStatus)
+                repository.updateIssueStatus(issueId, newStatus)
+                _issue.value = _issue.value?.copy(status = newStatus)
+                delay(300)
                 _isSaving.value = false
                 onSuccess()
             } catch (e: Exception) {
                 _isSaving.value = false
-                // Handle error
+                _error.value = "Failed to update status: ${e.message ?: "Unknown error"}"
             }
         }
     }
 
     fun assignWorker(worker: User?, onSuccess: () -> Unit) {
-        val currentIssue = _issue.value ?: return
-
         viewModelScope.launch {
             _isSaving.value = true
+            _error.value = null
             try {
-                kotlinx.coroutines.delay(300)
-                repository.updateIssueAssignment(currentIssue.id, worker?.id)
-                _issue.value = currentIssue.copy(assignedTo = worker?.id)
+                repository.updateIssueAssignment(issueId, worker?.id)
                 _assignedWorker.value = worker
+                _issue.value = _issue.value?.copy(assignedTo = worker?.id)
+                delay(300)
                 _isSaving.value = false
                 onSuccess()
             } catch (e: Exception) {
                 _isSaving.value = false
+                _error.value = "Failed to assign worker: ${e.message ?: "Unknown error"}"
             }
         }
     }
 
-    fun refreshIssue() {
-        loadIssue()
+    fun clearError() {
+        _error.value = null
     }
 }

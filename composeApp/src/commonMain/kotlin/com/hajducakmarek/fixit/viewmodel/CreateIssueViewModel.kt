@@ -6,6 +6,7 @@ import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.repository.IssueRepository
+import com.hajducakmarek.fixit.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +29,15 @@ class CreateIssueViewModel(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
+    private val _flatNumberError = MutableStateFlow<String?>(null)
+    val flatNumberError: StateFlow<String?> = _flatNumberError.asStateFlow()
+
+    private val _descriptionError = MutableStateFlow<String?>(null)
+    val descriptionError: StateFlow<String?> = _descriptionError.asStateFlow()
+
+    private val _saveError = MutableStateFlow<String?>(null)
+    val saveError: StateFlow<String?> = _saveError.asStateFlow()
+
     private val _workers = MutableStateFlow<List<User>>(emptyList())
     val workers: StateFlow<List<User>> = _workers.asStateFlow()
 
@@ -45,11 +55,19 @@ class CreateIssueViewModel(
     }
 
     fun onFlatNumberChanged(text: String) {
-        _flatNumber.value = text
+        _flatNumber.value = text.uppercase()
+        // Clear error when user types
+        if (_flatNumberError.value != null) {
+            _flatNumberError.value = null
+        }
     }
 
     fun onDescriptionChanged(text: String) {
         _description.value = text
+        // Clear error when user types
+        if (_descriptionError.value != null) {
+            _descriptionError.value = null
+        }
     }
 
     fun onPhotoSelected(path: String) {
@@ -60,8 +78,26 @@ class CreateIssueViewModel(
         _selectedWorker.value = worker
     }
 
+    private fun validateForm(): Boolean {
+        var isValid = true
+
+        // Validate flat number
+        val flatError = Validation.getFlatNumberError(_flatNumber.value)
+        _flatNumberError.value = flatError
+        if (flatError != null) isValid = false
+
+        // Validate description
+        val descError = Validation.getDescriptionError(_description.value)
+        _descriptionError.value = descError
+        if (descError != null) isValid = false
+
+        return isValid
+    }
+
     fun saveIssue(createdBy: String, onSuccess: () -> Unit) {
-        if (_flatNumber.value.isBlank() || _description.value.isBlank()) {
+        _saveError.value = null
+
+        if (!validateForm()) {
             return
         }
 
@@ -71,11 +107,11 @@ class CreateIssueViewModel(
                 val newIssue = Issue(
                     id = "issue-${uuid4()}",
                     photoPath = _photoPath.value,
-                    description = _description.value,
-                    flatNumber = _flatNumber.value,
+                    description = _description.value.trim(),
+                    flatNumber = _flatNumber.value.trim(),
                     status = IssueStatus.OPEN,
                     createdBy = createdBy,
-                    assignedTo = _selectedWorker.value?.id,  // Use selected worker
+                    assignedTo = _selectedWorker.value?.id,
                     createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                     completedAt = null
                 )
@@ -84,6 +120,7 @@ class CreateIssueViewModel(
                 onSuccess()
             } catch (e: Exception) {
                 _isSaving.value = false
+                _saveError.value = "Failed to create issue: ${e.message ?: "Unknown error"}"
             }
         }
     }
