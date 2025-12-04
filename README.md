@@ -4,9 +4,9 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 
 ## 🎯 Features
 
-### ✅ Implemented (Sessions 1-10)
+### ✅ Implemented
 
-#### Core Issue Management
+#### Core Issue Management  (Sessions 1-8)
 - **Issue List** with photo thumbnails and status indicators
 - **Create Issues** with camera integration (Android) / simulation (iOS)
 - **Issue Details** with full information display
@@ -78,13 +78,7 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **expect/actual Pattern** for platform-specific code
 - **UUID Generation** for unique IDs
 
-### 🚧 Coming Soon (Sessions 11-27)
-
-#### Authentication & Security
-- User login/logout
-- Role-based permissions (Manager vs Worker)
-- Session management
-- Secure user storage
+### 🚧 Coming Soon (Sessions 13-27)
 
 #### Advanced Features
 - Issue comments/notes
@@ -346,7 +340,7 @@ class IssueTest {
 - Conditional navigation (hide tabs based on role)
 - User context propagation through ViewModels
 
-### Validation & Error Handling
+### Session 12: Validation & Error Handling
 - **Regex Validation**: Flat number format enforcement
 - **State-based Errors**: Real-time validation feedback
 - **Snackbar Messages**: Non-intrusive error display
@@ -490,13 +484,13 @@ fun IssueCard(issue: Issue) {
 - [x] Search and filtering
 - [x] Bottom navigation
 
-### Phase 2: Authentication (In Progress)
-- [ ] User login system
-- [ ] Role-based permissions
-- [ ] Session management
-- [ ] Logout functionality
+### Phase 2: Authentication (✅ Complete)
+- [x] User login system
+- [x] Role-based permissions
+- [x] Session management
+- [x] Logout functionality
 
-### Phase 3: Advanced Features
+### Phase 3: Advanced Features (In Progress)
 - [ ] Issue comments
 - [ ] Multiple photos per issue
 - [ ] Issue history timeline
