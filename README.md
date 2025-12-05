@@ -4,9 +4,9 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 
 ## 🎯 Features
 
-### ✅ Implemented
+### ✅ Implemented (Sessions 1-13)
 
-#### Core Issue Management  (Sessions 1-8)
+#### Core Issue Management (Sessions 1-8)
 - **Issue List** with photo thumbnails and status indicators
 - **Create Issues** with camera integration (Android) / simulation (iOS)
 - **Issue Details** with full information display
@@ -20,7 +20,7 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **Assign Workers** to issues via dialog selection
 - **Unassign Workers** functionality
 - **Worker Filtering** by role
-- **Default Worker Seeding** (Mike Johnson, Sarah Williams)
+- **Default Worker Seeding** (John Smith, Mike Johnson, Sarah Williams)
 
 #### Search & Filtering (Session 10)
 - **Text Search** by issue description and flat number (case-insensitive)
@@ -41,7 +41,7 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **Worker Assignment During Creation** (optional dropdown)
 - **Logout Functionality** with session clearing
 - **Current User Display** in top app bar
-- **Status Flow Restrictions**: Workers can only progress forward (OPEN→IN_PROGRESS→FIXED), managers have full control
+- **Status Flow Restrictions**: Workers can only progress forward, managers have full control
 - **Filtered Issue Lists**: Workers see only their assigned issues, managers see all
 - **Session Persistence**: Login state saved across app restarts
 
@@ -60,53 +60,74 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **Form Validation** before save operations
 - **Loading States** with error recovery options
 
+#### Issue Comments & Notes (Session 13)
+- **Comment System** for manager-worker communication on issues
+- **Comment Model** with user association and timestamps
+- **Comment Database Table** with foreign keys to issues and users
+- **Add Comments** with text input and send button
+- **View Comments** in chronological order on issue detail screen
+- **Comment Display** with commenter name, role badge (👔/👷), and timestamp
+- **Delete Comments** with confirmation dialog
+- **Role-Based Delete Permissions**: Users can delete own comments, managers can delete any
+- **Own Comment Highlighting** with light blue background
+- **Empty State** for comments section ("No comments yet. Be the first to comment!")
+- **Loading States** for comment operations
+- **Multi-line Text Input** (max 3 lines)
+- **Real-Time Updates** after posting/deleting comments
+- **Error Handling** for comment operations
+
 #### Navigation & UX
 - **Bottom Navigation Bar** (iOS-style) with Issues and Workers tabs
 - **Material Design 3** UI throughout
 - **Selected/Unselected States** for tabs and filter chips
-- **Confirmation Dialogs** for status changes
+- **Confirmation Dialogs** for status changes and deletions
 - **Toast Notifications** for user feedback
 - **Loading States** with progress indicators
 - **Form Validation** for inputs
+- **Snackbar Messages** for errors and success
 
 #### Data & Architecture
 - **SQLite Database** with SQLDelight (type-safe queries)
 - **Repository Pattern** for data access
 - **ViewModels** with StateFlow for reactive state
 - **Coroutines** for async operations
-- **Database Relationships** (Issues ↔ Workers)
+- **Database Relationships** (Issues ↔ Workers ↔ Comments)
 - **expect/actual Pattern** for platform-specific code
 - **UUID Generation** for unique IDs
+- **Foreign Key Constraints** for data integrity
 
-### 🚧 Coming Soon (Sessions 13-27)
+### 🚧 Coming Soon (Sessions 14-27)
 
 #### Advanced Features
-- Issue comments/notes
-- Issue history/timeline
+- Issue history/activity timeline
 - File attachments (multiple photos, PDFs)
 - Push notifications
 - Offline sync
 - Export reports (PDF)
 - Dashboard with statistics
 - Due dates and reminders
+- Priority levels
 
 #### Polish & Performance
+- Real iOS camera implementation
 - Image optimization
 - Caching strategies
-- Error handling improvements
 - Accessibility features
 - Localization (multiple languages)
 - Dark mode
+- Performance monitoring
 
 ---
 
 ## 📱 Screenshots
 
 ### Android
-- **Issue List**: Clean cards with photo thumbnails and status
+- **Login Screen**: User profile selection with role badges
+- **Issue List**: Clean cards with photo thumbnails, status, and filters
 - **Search & Filters**: Horizontal scrolling filter chips with active count
-- **Create Issue**: Camera integration with live preview
-- **Issue Detail**: Full information with worker assignment
+- **Create Issue**: Camera integration with worker assignment
+- **Issue Detail**: Full information with worker assignment and comments
+- **Comments**: Chronological conversation with role badges
 - **Workers List**: Worker cards with roles and emoji icons
 - **Bottom Navigation**: iOS-style tab bar
 
@@ -134,18 +155,27 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **Coil 2.5.0**: Image loading and caching
 - **Accompanist Permissions 0.32.0**: Runtime permission handling
 - **AndroidX Lifecycle**: ViewModel and lifecycle management
+- **SharedPreferences**: Session storage
 
 ### iOS-Specific (~10%)
 - **Native SQLite Driver**: iOS database implementation
 - **UIKit Integration**: SwiftUI interop (camera pending)
+- **UserDefaults**: Session storage
+
+### Validation & Error Handling
+- **Regex Validation**: Flat number format enforcement
+- **State-based Errors**: Real-time validation feedback
+- **Snackbar Messages**: Non-intrusive error display
+- **Error Recovery**: User-friendly retry mechanisms
 
 ---
 
 ## 🏗 Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                   Presentation Layer                     │
-│  - Compose UI screens (Issues, Workers, Detail, etc.)   │
+│  - Compose UI screens (Login, Issues, Workers, etc.)    │
 │  - ViewModels with StateFlow                            │
 │  - Navigation logic                                      │
 └─────────────────────┬───────────────────────────────────┘
@@ -153,15 +183,17 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 ┌─────────────────────┴───────────────────────────────────┐
 │                    Business Logic                        │
 │  - Repository Pattern (single source of truth)          │
-│  - Data validation                                       │
+│  - Data validation (Validation.kt)                      │
 │  - Filtering & search logic                             │
+│  - Session management                                    │
 └─────────────────────┬───────────────────────────────────┘
                       │
 ┌─────────────────────┴───────────────────────────────────┐
 │                     Data Layer                           │
-│  - SQLDelight Database                                   │
+│  - SQLDelight Database (3 tables)                       │
 │  - expect/actual DatabaseDriver                         │
 │  - Type-safe queries                                     │
+│  - Foreign key relationships                             │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -171,12 +203,14 @@ ConstructionIssueTracker/
 ├── composeApp/
 │   ├── commonMain/              # 75% - Shared code
 │   │   ├── kotlin/
-│   │   │   ├── models/          # Data classes (Issue, User)
+│   │   │   ├── models/          # Data classes (Issue, User, Comment)
 │   │   │   ├── database/        # expect declarations
 │   │   │   ├── repository/      # Data access layer
 │   │   │   ├── viewmodel/       # Business logic & state
 │   │   │   ├── ui/              # Compose screens & components
 │   │   │   ├── platform/        # expect declarations (ImagePicker)
+│   │   │   ├── session/         # UserSession (expect/actual)
+│   │   │   ├── utils/           # Validation helpers
 │   │   │   └── App.kt           # Main app with navigation
 │   │   ├── sqldelight/          # SQL schema & queries
 │   │   └── resources/           # Shared assets
@@ -185,12 +219,14 @@ ConstructionIssueTracker/
 │   │       ├── database/        # AndroidSqliteDriver
 │   │       ├── platform/        # ImagePicker with CameraX
 │   │       ├── camera/          # CameraCapture composable
+│   │       ├── session/         # UserSession (SharedPreferences)
 │   │       ├── ui/              # Android image loading (Coil)
 │   │       └── MainActivity.kt  # Entry point
 │   ├── iosMain/                 # 10% - iOS specific
 │   │   └── kotlin/
 │   │       ├── database/        # NativeSqliteDriver
 │   │       ├── platform/        # ImagePicker (simulated)
+│   │       ├── session/         # UserSession (UserDefaults)
 │   │       ├── ui/              # iOS image loading (placeholder)
 │   │       └── MainViewController.kt
 │   └── commonTest/              # Unit tests
@@ -340,11 +376,35 @@ class IssueTest {
 - Conditional navigation (hide tabs based on role)
 - User context propagation through ViewModels
 
-### Session 12: Validation & Error Handling
-- **Regex Validation**: Flat number format enforcement
-- **State-based Errors**: Real-time validation feedback
-- **Snackbar Messages**: Non-intrusive error display
-- **Error Recovery**: User-friendly retry mechanisms
+### Session 12: Data Validation & Error Handling ✅
+**What:** Production-ready validation and error handling  
+**Learned:**
+- Input validation patterns (regex, length checks)
+- Real-time validation with state clearing
+- Error state management in ViewModels
+- Inline error messages vs snackbars
+- Character counters for text inputs
+- Auto-formatting user input (uppercase)
+- Try-catch error handling in repositories
+- User-friendly error messages
+- Validation helper utilities
+- Form validation before submission
+- Error recovery flows
+
+### Session 13: Issue Comments & Notes ✅
+**What:** Communication system for issues  
+**Learned:**
+- Foreign key relationships in SQLite
+- JOIN-like operations (loading related data)
+- Data class composition (CommentWithUser)
+- Chronological sorting with ORDER BY
+- Real-time list updates after mutations
+- Confirmation dialogs for destructive actions
+- Conditional UI rendering (delete button visibility)
+- Role-based action permissions
+- Visual distinction for own vs others' content
+- Multi-line text input handling
+- Timestamp display formatting
 
 ---
 
@@ -370,6 +430,7 @@ actual class DatabaseDriverFactory {
 
 **Use cases in our app:**
 - Database drivers (SQLite for each platform)
+- Session storage (SharedPreferences vs UserDefaults)
 - Image picker (CameraX vs UIImagePickerController)
 - Image loading (Coil vs native iOS)
 
@@ -447,18 +508,19 @@ fun IssueCard(issue: Issue) {
 
 ## 📊 Project Statistics
 
-**Development Time:** ~12 hours  
-**Sessions Completed:** 10 / 27 (37%)  
-**Code Written:** ~2,500 lines  
+**Development Time:** ~15 hours  
+**Sessions Completed:** 13 / 27 (48%)  
+**Code Written:** ~3,700 lines  
 **Code Sharing:** ~75%  
-**Screens:** 5 (Issues List, Create Issue, Issue Detail, Workers List, Add Worker)  
-**ViewModels:** 6  
-**Database Tables:** 2 (Issue, User)  
+**Screens:** 6 (Login, Issues, Create Issue, Issue Detail, Workers, Add Worker)  
+**ViewModels:** 7  
+**Database Tables:** 3 (Issue, User, Comment)  
 **Tests:** 3 passing ✅
 
 ### Platform Status
 | Feature | Android | iOS |
 |---------|---------|-----|
+| Login System | ✅ | ✅ |
 | Issue List | ✅ | ✅ |
 | Create Issue | ✅ | ✅ |
 | Camera | ✅ Real | ⏳ Simulated |
@@ -469,7 +531,10 @@ fun IssueCard(issue: Issue) {
 | Add Worker | ✅ | ✅ |
 | Worker Assignment | ✅ | ✅ |
 | Search & Filters | ✅ | ✅ |
+| Comments | ✅ | ✅ |
 | Bottom Nav | ✅ | ✅ |
+| Authentication | ✅ | ✅ |
+| Validation | ✅ | ✅ |
 | Database | ✅ SQLite | ✅ SQLite |
 
 ---
@@ -484,26 +549,32 @@ fun IssueCard(issue: Issue) {
 - [x] Search and filtering
 - [x] Bottom navigation
 
-### Phase 2: Authentication (✅ Complete)
+### Phase 2: User Management (✅ Complete)
 - [x] User login system
 - [x] Role-based permissions
 - [x] Session management
 - [x] Logout functionality
 
-### Phase 3: Advanced Features (In Progress)
-- [ ] Issue comments
-- [ ] Multiple photos per issue
+### Phase 3: Communication (✅ Complete)
+- [x] Issue comments
+- [x] Comment threading
+- [x] Delete comments
+- [x] Role-based comment permissions
+
+### Phase 4: Advanced Features (In Progress)
 - [ ] Issue history timeline
+- [ ] Multiple photos per issue
 - [ ] Push notifications
 - [ ] Dashboard with charts
+- [ ] Export to PDF
 
-### Phase 4: Polish
+### Phase 5: Polish
 - [ ] Real iOS camera
 - [ ] Dark mode
 - [ ] Localization
-- [ ] Error handling
 - [ ] Accessibility
 - [ ] Performance optimization
+- [ ] Offline sync
 
 ---
 
@@ -523,6 +594,8 @@ fun IssueCard(issue: Issue) {
 - **Testable code** with dependency injection
 - **Material Design 3** for modern UI
 - **Real filtering system** with multiple criteria
+- **Role-based security** built-in
+- **Communication system** for team collaboration
 
 ---
 
@@ -531,7 +604,7 @@ fun IssueCard(issue: Issue) {
 - iOS camera uses simulated paths (real UIImagePickerController pending)
 - Test coverage needs expansion (currently ~10%)
 - No network layer yet (offline only)
-- No user authentication (coming in Session 11)
+- No issue history timeline yet
 
 ---
 

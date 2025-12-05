@@ -6,6 +6,8 @@ import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
+import com.hajducakmarek.fixit.models.Comment
+import com.hajducakmarek.fixit.models.CommentWithUser
 
 class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
     private val database = FixItDatabase(databaseDriverFactory.createDriver())
@@ -156,6 +158,51 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
             }
         } catch (e: Exception) {
             throw Exception("Failed to load workers", e)
+        }
+    }
+
+    // Comment operations
+    suspend fun getCommentsByIssue(issueId: String): List<CommentWithUser> {
+        return try {
+            dbQuery.selectCommentsByIssue(issueId).executeAsList().map { commentData ->
+                val comment = Comment(
+                    id = commentData.id,
+                    issueId = commentData.issueId,
+                    userId = commentData.userId,
+                    text = commentData.text,
+                    createdAt = commentData.createdAt
+                )
+                val user = getUserById(commentData.userId) ?: User(
+                    id = commentData.userId,
+                    name = "Unknown User",
+                    role = UserRole.WORKER
+                )
+                CommentWithUser(comment, user)
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load comments", e)
+        }
+    }
+
+    suspend fun insertComment(comment: Comment) {
+        try {
+            dbQuery.insertComment(
+                id = comment.id,
+                issueId = comment.issueId,
+                userId = comment.userId,
+                text = comment.text,
+                createdAt = comment.createdAt
+            )
+        } catch (e: Exception) {
+            throw Exception("Failed to add comment", e)
+        }
+    }
+
+    suspend fun deleteComment(commentId: String) {
+        try {
+            dbQuery.deleteComment(commentId)
+        } catch (e: Exception) {
+            throw Exception("Failed to delete comment", e)
         }
     }
 }

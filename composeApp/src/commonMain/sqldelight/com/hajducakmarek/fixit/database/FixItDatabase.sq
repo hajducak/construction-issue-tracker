@@ -18,6 +18,17 @@ CREATE TABLE Issue (
     completedAt INTEGER
 );
 
+-- Comments Table
+CREATE TABLE IF NOT EXISTS Comment (
+    id TEXT PRIMARY KEY NOT NULL,
+    issueId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    text TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (issueId) REFERENCES Issue(id),
+    FOREIGN KEY (userId) REFERENCES User(id)
+);
+
 -- Issue Queries
 selectAllIssues:
 SELECT * FROM Issue;
@@ -55,3 +66,14 @@ SELECT * FROM User WHERE role = ?;
 insertUser:
 INSERT INTO User(id, name, role)
 VALUES (?, ?, ?);
+
+-- Comment queries
+selectCommentsByIssue:
+SELECT * FROM Comment WHERE issueId = ? ORDER BY createdAt ASC;
+
+insertComment:
+INSERT INTO Comment(id, issueId, userId, text, createdAt)
+VALUES (?, ?, ?, ?, ?);
+
+deleteComment:
+DELETE FROM Comment WHERE id = ?;

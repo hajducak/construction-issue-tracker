@@ -13,6 +13,7 @@ import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
+import com.hajducakmarek.fixit.models.CommentWithUser
 import com.hajducakmarek.fixit.viewmodel.IssueDetailViewModel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -30,16 +31,21 @@ fun IssueDetailScreen(
     val isSaving by viewModel.isSaving.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val assignedWorker by viewModel.assignedWorker.collectAsState()
-    val error by viewModel.error.collectAsState()  // Add this
+    val error by viewModel.error.collectAsState()
+    val comments by viewModel.comments.collectAsState()
+    val commentText by viewModel.commentText.collectAsState()
+    val isSendingComment by viewModel.isSendingComment.collectAsState()
+    val isLoadingComments by viewModel.isLoadingComments.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showConfirmDialog by remember { mutableStateOf(false) }
     var pendingStatus by remember { mutableStateOf<IssueStatus?>(null) }
     var showSuccessToast by remember { mutableStateOf(false) }
     var successMessage by remember { mutableStateOf("") }
-
     var showWorkerDialog by remember { mutableStateOf(false) }
     var pendingWorker by remember { mutableStateOf<User?>(null) }
+    var showDeleteCommentDialog by remember { mutableStateOf(false) }
+    var pendingDeleteCommentId by remember { mutableStateOf<String?>(null) }
 
     // Show error in snackbar
     LaunchedEffect(error) {
@@ -141,6 +147,21 @@ fun IssueDetailScreen(
                             showWorkerDialog = true
                         }
                     },
+                    comments = comments,
+                    commentText = commentText,
+                    isSendingComment = isSendingComment,
+                    isLoadingComments = isLoadingComments,
+                    currentUser = currentUser,
+                    onCommentTextChanged = viewModel::onCommentTextChanged,
+                    onSendComment = {
+                        viewModel.sendComment(currentUser.id) {
+                            // Comment sent successfully
+                        }
+                    },
+                    onDeleteComment = { commentId ->
+                        pendingDeleteCommentId = commentId
+                        showDeleteCommentDialog = true
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
@@ -193,6 +214,39 @@ fun IssueDetailScreen(
             }
         )
     }
+
+    if (showDeleteCommentDialog && pendingDeleteCommentId != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteCommentDialog = false
+                pendingDeleteCommentId = null
+            },
+            title = { Text("Delete Comment") },
+            text = { Text("Are you sure you want to delete this comment? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteComment(pendingDeleteCommentId!!) {
+                            showDeleteCommentDialog = false
+                            pendingDeleteCommentId = null
+                        }
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteCommentDialog = false
+                        pendingDeleteCommentId = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -203,7 +257,15 @@ private fun IssueDetailContent(
     canEdit: Boolean,
     onStatusChange: (IssueStatus) -> Unit,
     onAssignWorker: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    comments: List<CommentWithUser>,
+    commentText: String,
+    isSendingComment: Boolean,
+    isLoadingComments: Boolean,
+    currentUser: User,
+    onCommentTextChanged: (String) -> Unit,
+    onSendComment: () -> Unit,
+    onDeleteComment: (String) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -322,6 +384,17 @@ private fun IssueDetailContent(
                 )
             }
         }
+
+        CommentsSection(
+            comments = comments,
+            commentText = commentText,
+            isSendingComment = isSendingComment,
+            isLoadingComments = isLoadingComments,
+            currentUser = currentUser,
+            onCommentTextChanged = onCommentTextChanged,
+            onSendComment = onSendComment,
+            onDeleteComment = onDeleteComment
+        )
     }
 }
 
@@ -568,6 +641,160 @@ private fun WorkerAssignmentDialog(
             }
         }
     )
+}
+
+@Composable
+private fun CommentsSection(
+    comments: List<CommentWithUser>,
+    commentText: String,
+    isSendingComment: Boolean,
+    isLoadingComments: Boolean,
+    currentUser: User,
+    onCommentTextChanged: (String) -> Unit,
+    onSendComment: () -> Unit,
+    onDeleteComment: (String) -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Comments (${comments.size})",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Comment input
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = commentText,
+                    onValueChange = onCommentTextChanged,
+                    placeholder = { Text("Add a comment...") },
+                    modifier = Modifier.weight(1f),
+                    enabled = !isSendingComment,
+                    maxLines = 3
+                )
+
+                IconButton(
+                    onClick = onSendComment,
+                    enabled = commentText.isNotBlank() && !isSendingComment
+                ) {
+                    if (isSendingComment) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("➤", style = MaterialTheme.typography.headlineSmall)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Comments list
+            when {
+                isLoadingComments -> {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                comments.isEmpty() -> {
+                    Text(
+                        text = "No comments yet. Be the first to comment!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                else -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        comments.forEach { commentWithUser ->
+                            CommentItem(
+                                commentWithUser = commentWithUser,
+                                currentUser = currentUser,
+                                onDelete = { onDeleteComment(commentWithUser.comment.id) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentItem(
+    commentWithUser: CommentWithUser,
+    currentUser: User,
+    onDelete: () -> Unit
+) {
+    val comment = commentWithUser.comment
+    val user = commentWithUser.user
+    val isOwnComment = comment.userId == currentUser.id
+    val canDelete = isOwnComment || currentUser.role == UserRole.MANAGER
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isOwnComment) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = if (user.role == UserRole.MANAGER) "👔" else "👷",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = user.name,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = user.role.name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (canDelete) {
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Text("🗑️", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = comment.text,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = formatDate(comment.createdAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 private fun formatDate(timestamp: Long): String {
