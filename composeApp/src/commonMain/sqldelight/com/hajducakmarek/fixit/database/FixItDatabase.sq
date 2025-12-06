@@ -29,6 +29,19 @@ CREATE TABLE IF NOT EXISTS Comment (
     FOREIGN KEY (userId) REFERENCES User(id)
 );
 
+-- ActivityLog Table
+CREATE TABLE IF NOT EXISTS ActivityLog (
+    id TEXT PRIMARY KEY NOT NULL,
+    issueId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    activityType TEXT NOT NULL,
+    oldValue TEXT,
+    newValue TEXT,
+    createdAt INTEGER NOT NULL,
+    FOREIGN KEY (issueId) REFERENCES Issue(id),
+    FOREIGN KEY (userId) REFERENCES User(id)
+);
+
 -- Issue Queries
 selectAllIssues:
 SELECT * FROM Issue;
@@ -77,3 +90,11 @@ VALUES (?, ?, ?, ?, ?);
 
 deleteComment:
 DELETE FROM Comment WHERE id = ?;
+
+-- ActivityLog queries
+selectActivitiesByIssue:
+SELECT * FROM ActivityLog WHERE issueId = ? ORDER BY createdAt DESC;
+
+insertActivity:
+INSERT INTO ActivityLog(id, issueId, userId, activityType, oldValue, newValue, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);

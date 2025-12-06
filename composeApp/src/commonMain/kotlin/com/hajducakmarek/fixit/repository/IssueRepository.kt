@@ -8,6 +8,10 @@ import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
 import com.hajducakmarek.fixit.models.Comment
 import com.hajducakmarek.fixit.models.CommentWithUser
+import com.hajducakmarek.fixit.models.ActivityLog
+import com.hajducakmarek.fixit.models.ActivityLogWithUser
+import com.hajducakmarek.fixit.models.ActivityType
+import com.benasher44.uuid.uuid4
 
 class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
     private val database = FixItDatabase(databaseDriverFactory.createDriver())
@@ -66,28 +70,42 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 createdAt = issue.createdAt,
                 completedAt = issue.completedAt
             )
+            logIssueCreation(issue.id, issue.createdBy)
         } catch (e: Exception) {
             throw Exception("Failed to create issue", e)
         }
     }
 
-    suspend fun updateIssueStatus(issueId: String, status: IssueStatus) {
+    suspend fun updateIssueStatus(issueId: String, newStatus: IssueStatus, userId: String) {
         try {
+            // Get old status first
+            val oldIssue = getIssueById(issueId)
+            val oldStatus = oldIssue?.status ?: IssueStatus.OPEN
+
             dbQuery.updateIssueStatus(
-                status = status.name,
+                status = newStatus.name,
                 id = issueId
             )
+
+            logStatusChange(issueId, userId, oldStatus, newStatus)
         } catch (e: Exception) {
             throw Exception("Failed to update issue status", e)
         }
     }
 
-    suspend fun updateIssueAssignment(issueId: String, workerId: String?) {
+    suspend fun updateIssueAssignment(issueId: String, newWorkerId: String?, userId: String) {
         try {
+            // Get old assignment first
+            val oldIssue = getIssueById(issueId)
+            val oldWorkerId = oldIssue?.assignedTo
+
             dbQuery.updateIssueAssignment(
-                assignedTo = workerId,
+                assignedTo = newWorkerId,
                 id = issueId
             )
+
+            // Log assignment change
+            logAssignmentChange(issueId, userId, oldWorkerId, newWorkerId)
         } catch (e: Exception) {
             throw Exception("Failed to assign worker", e)
         }
@@ -193,16 +211,116 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 text = comment.text,
                 createdAt = comment.createdAt
             )
+            logCommentActivity(comment.issueId, comment.userId, comment.id, false)
         } catch (e: Exception) {
             throw Exception("Failed to add comment", e)
         }
     }
 
-    suspend fun deleteComment(commentId: String) {
+    suspend fun deleteComment(commentId: String, userId: String, issueId: String) {
         try {
             dbQuery.deleteComment(commentId)
+            logCommentActivity(issueId, userId, commentId, true)
         } catch (e: Exception) {
             throw Exception("Failed to delete comment", e)
         }
+    }
+
+    suspend fun getActivitiesByIssue(issueId: String): List<ActivityLogWithUser> {
+        return try {
+            dbQuery.selectActivitiesByIssue(issueId).executeAsList().map { activityData ->
+                val activity = ActivityLog(
+                    id = activityData.id,
+                    issueId = activityData.issueId,
+                    userId = activityData.userId,
+                    activityType = ActivityType.valueOf(activityData.activityType),
+                    oldValue = activityData.oldValue,
+                    newValue = activityData.newValue,
+                    createdAt = activityData.createdAt
+                )
+                val user = getUserById(activityData.userId) ?: User(
+                    id = activityData.userId,
+                    name = "Unknown User",
+                    role = UserRole.WORKER
+                )
+                ActivityLogWithUser(activity, user)
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load activity log", e)
+        }
+    }
+
+    suspend fun insertActivity(activity: ActivityLog) {
+        try {
+            dbQuery.insertActivity(
+                id = activity.id,
+                issueId = activity.issueId,
+                userId = activity.userId,
+                activityType = activity.activityType.name,
+                oldValue = activity.oldValue,
+                newValue = activity.newValue,
+                createdAt = activity.createdAt
+            )
+        } catch (e: Exception) {
+            throw Exception("Failed to log activity", e)
+        }
+    }
+
+    suspend fun logIssueCreation(issueId: String, userId: String) {
+        val activity = ActivityLog(
+            id = "activity-${uuid4()}",
+            issueId = issueId,
+            userId = userId,
+            activityType = ActivityType.CREATED,
+            oldValue = null,
+            newValue = null,
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        )
+        insertActivity(activity)
+    }
+
+    suspend fun logStatusChange(issueId: String, userId: String, oldStatus: IssueStatus, newStatus: IssueStatus) {
+        val activity = ActivityLog(
+            id = "activity-${uuid4()}",
+            issueId = issueId,
+            userId = userId,
+            activityType = ActivityType.STATUS_CHANGED,
+            oldValue = oldStatus.name,
+            newValue = newStatus.name,
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        )
+        insertActivity(activity)
+    }
+
+    suspend fun logAssignmentChange(issueId: String, userId: String, oldWorkerId: String?, newWorkerId: String?) {
+        val activityType = when {
+            oldWorkerId == null && newWorkerId != null -> ActivityType.ASSIGNED
+            oldWorkerId != null && newWorkerId == null -> ActivityType.UNASSIGNED
+            else -> ActivityType.ASSIGNED
+        }
+
+        val activity = ActivityLog(
+            id = "activity-${uuid4()}",
+            issueId = issueId,
+            userId = userId,
+            activityType = activityType,
+            oldValue = oldWorkerId,
+            newValue = newWorkerId,
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        )
+        insertActivity(activity)
+    }
+
+    suspend fun logCommentActivity(issueId: String, userId: String, commentId: String, isDeleted: Boolean) {
+        val activity = ActivityLog(
+            id = "activity-${uuid4()}",
+            issueId = issueId,
+            userId = userId,
+            activityType = if (isDeleted) ActivityType.COMMENT_DELETED else ActivityType.COMMENT_ADDED,
+            oldValue = if (isDeleted) commentId else null,
+            newValue = if (!isDeleted) commentId else null,
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        )
+        insertActivity(activity)
     }
 }

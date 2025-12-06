@@ -14,6 +14,9 @@ import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
 import com.hajducakmarek.fixit.models.CommentWithUser
+import com.hajducakmarek.fixit.models.ActivityLogWithUser
+import com.hajducakmarek.fixit.models.ActivityLog
+import com.hajducakmarek.fixit.models.ActivityType
 import com.hajducakmarek.fixit.viewmodel.IssueDetailViewModel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -36,6 +39,8 @@ fun IssueDetailScreen(
     val commentText by viewModel.commentText.collectAsState()
     val isSendingComment by viewModel.isSendingComment.collectAsState()
     val isLoadingComments by viewModel.isLoadingComments.collectAsState()
+    val activities by viewModel.activities.collectAsState()
+    val isLoadingActivities by viewModel.isLoadingActivities.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -162,6 +167,8 @@ fun IssueDetailScreen(
                         pendingDeleteCommentId = commentId
                         showDeleteCommentDialog = true
                     },
+                    activities = activities,
+                    isLoadingActivities = isLoadingActivities,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
@@ -178,7 +185,7 @@ fun IssueDetailScreen(
             isSaving = isSaving,
             onConfirm = {
                 val status = pendingStatus!!
-                viewModel.updateStatus(status) {
+                viewModel.updateStatus(status, currentUser.id) {
                     showConfirmDialog = false
                     successMessage = "Status updated to ${status.name.replace("_", " ")}"
                     showSuccessToast = true
@@ -199,7 +206,7 @@ fun IssueDetailScreen(
             isSaving = isSaving,
             onAssign = { worker ->
                 pendingWorker = worker
-                viewModel.assignWorker(worker) {
+                viewModel.assignWorker(worker, currentUser.id) {
                     showWorkerDialog = false
                     successMessage = if (worker != null) {
                         "Assigned to ${worker.name}"
@@ -226,7 +233,7 @@ fun IssueDetailScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteComment(pendingDeleteCommentId!!) {
+                        viewModel.deleteComment(pendingDeleteCommentId!!, currentUser.id) {
                             showDeleteCommentDialog = false
                             pendingDeleteCommentId = null
                         }
@@ -265,7 +272,9 @@ private fun IssueDetailContent(
     currentUser: User,
     onCommentTextChanged: (String) -> Unit,
     onSendComment: () -> Unit,
-    onDeleteComment: (String) -> Unit
+    onDeleteComment: (String) -> Unit,
+    activities: List<ActivityLogWithUser>,
+    isLoadingActivities: Boolean
 ) {
     Column(
         modifier = modifier
@@ -394,6 +403,11 @@ private fun IssueDetailContent(
             onCommentTextChanged = onCommentTextChanged,
             onSendComment = onSendComment,
             onDeleteComment = onDeleteComment
+        )
+
+        ActivityTimeline(
+            activities = activities,
+            isLoading = isLoadingActivities
         )
     }
 }
@@ -794,6 +808,118 @@ private fun CommentItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun ActivityTimeline(
+    activities: List<ActivityLogWithUser>,
+    isLoading: Boolean
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Activity Timeline (${activities.size})",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                activities.isEmpty() -> {
+                    Text(
+                        text = "No activity yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                else -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        activities.forEach { activityWithUser ->
+                            ActivityItem(activityWithUser = activityWithUser)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityItem(
+    activityWithUser: ActivityLogWithUser
+) {
+    val activity = activityWithUser.activity
+    val user = activityWithUser.user
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Activity icon
+        Text(
+            text = getActivityIcon(activity.activityType),
+            style = MaterialTheme.typography.headlineSmall
+        )
+
+        // Activity description
+        Column(modifier = Modifier.weight(1f)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = user.name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = getActivityDescription(activity),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = formatDate(activity.createdAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+private fun getActivityIcon(type: ActivityType): String {
+    return when (type) {
+        ActivityType.CREATED -> "✨"
+        ActivityType.STATUS_CHANGED -> "🔄"
+        ActivityType.ASSIGNED -> "👷"
+        ActivityType.UNASSIGNED -> "❌"
+        ActivityType.COMMENT_ADDED -> "💬"
+        ActivityType.COMMENT_DELETED -> "🗑️"
+    }
+}
+
+private fun getActivityDescription(activity: ActivityLog): String {
+    return when (activity.activityType) {
+        ActivityType.CREATED -> "created this issue"
+        ActivityType.STATUS_CHANGED -> {
+            val oldStatus = activity.oldValue?.replace("_", " ") ?: "Unknown"
+            val newStatus = activity.newValue?.replace("_", " ") ?: "Unknown"
+            "changed status from $oldStatus to $newStatus"
+        }
+        ActivityType.ASSIGNED -> "assigned this issue"
+        ActivityType.UNASSIGNED -> "unassigned the worker"
+        ActivityType.COMMENT_ADDED -> "added a comment"
+        ActivityType.COMMENT_DELETED -> "deleted a comment"
     }
 }
 

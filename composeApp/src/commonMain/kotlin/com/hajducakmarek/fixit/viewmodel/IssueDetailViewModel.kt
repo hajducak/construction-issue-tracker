@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.benasher44.uuid.uuid4
+import com.hajducakmarek.fixit.models.ActivityLogWithUser
 
 class IssueDetailViewModel(
     private val repository: IssueRepository,
@@ -50,10 +51,17 @@ class IssueDetailViewModel(
     private val _isSendingComment = MutableStateFlow(false)
     val isSendingComment: StateFlow<Boolean> = _isSendingComment.asStateFlow()
 
+    private val _activities = MutableStateFlow<List<ActivityLogWithUser>>(emptyList())
+    val activities: StateFlow<List<ActivityLogWithUser>> = _activities.asStateFlow()
+
+    private val _isLoadingActivities = MutableStateFlow(false)
+    val isLoadingActivities: StateFlow<Boolean> = _isLoadingActivities.asStateFlow()
+
     init {
         loadIssue()
         loadWorkers()
         loadComments()
+        loadActivities()
     }
 
     private fun loadIssue() {
@@ -99,6 +107,19 @@ class IssueDetailViewModel(
         }
     }
 
+    fun loadActivities() {
+        viewModelScope.launch {
+            _isLoadingActivities.value = true
+            try {
+                _activities.value = repository.getActivitiesByIssue(issueId)
+            } catch (e: Exception) {
+                _error.value = "Failed to load activity log: ${e.message ?: "Unknown error"}"
+            } finally {
+                _isLoadingActivities.value = false
+            }
+        }
+    }
+
     fun onCommentTextChanged(text: String) {
         _commentText.value = text
     }
@@ -119,7 +140,8 @@ class IssueDetailViewModel(
                 )
                 repository.insertComment(newComment)
                 _commentText.value = ""
-                loadComments() // Reload to show new comment
+                loadComments()
+                loadActivities()
                 _isSendingComment.value = false
                 onSuccess()
             } catch (e: Exception) {
@@ -129,12 +151,13 @@ class IssueDetailViewModel(
         }
     }
 
-    fun deleteComment(commentId: String, onSuccess: () -> Unit) {
+    fun deleteComment(commentId: String, userId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _error.value = null
             try {
-                repository.deleteComment(commentId)
-                loadComments() // Reload to update list
+                repository.deleteComment(commentId, userId, issueId)
+                loadComments()
+                loadActivities()
                 onSuccess()
             } catch (e: Exception) {
                 _error.value = "Failed to delete comment: ${e.message ?: "Unknown error"}"
@@ -142,13 +165,14 @@ class IssueDetailViewModel(
         }
     }
 
-    fun updateStatus(newStatus: IssueStatus, onSuccess: () -> Unit) {
+    fun updateStatus(newStatus: IssueStatus, userId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _isSaving.value = true
             _error.value = null
             try {
-                repository.updateIssueStatus(issueId, newStatus)
+                repository.updateIssueStatus(issueId, newStatus, userId)
                 _issue.value = _issue.value?.copy(status = newStatus)
+                loadActivities()
                 delay(300)
                 _isSaving.value = false
                 onSuccess()
@@ -159,14 +183,15 @@ class IssueDetailViewModel(
         }
     }
 
-    fun assignWorker(worker: User?, onSuccess: () -> Unit) {
+    fun assignWorker(worker: User?, userId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _isSaving.value = true
             _error.value = null
             try {
-                repository.updateIssueAssignment(issueId, worker?.id)
+                repository.updateIssueAssignment(issueId, worker?.id, userId)
                 _assignedWorker.value = worker
                 _issue.value = _issue.value?.copy(assignedTo = worker?.id)
+                loadActivities()
                 delay(300)
                 _isSaving.value = false
                 onSuccess()
