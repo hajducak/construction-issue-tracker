@@ -4,7 +4,7 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 
 ## 🎯 Features
 
-### ✅ Implemented (Sessions 1-13)
+### ✅ Implemented (Sessions 1-14)
 
 #### Core Issue Management (Sessions 1-8)
 - **Issue List** with photo thumbnails and status indicators
@@ -75,6 +75,20 @@ A Kotlin Multiplatform (KMP) mobile app for managing construction issues across 
 - **Multi-line Text Input** (max 3 lines)
 - **Real-Time Updates** after posting/deleting comments
 - **Error Handling** for comment operations
+
+#### Issue Activity Timeline & History (Session 14)
+- **Activity Log System** tracking all issue changes
+- **Activity Types**: Created, Status Changed, Assigned, Unassigned, Comment Added, Comment Deleted
+- **Automatic Logging** for all actions (create, status, assignment, comments)
+- **Timeline Display** in reverse chronological order on issue detail
+- **Activity Icons** for visual distinction (✨🔄👷❌💬🗑️)
+- **User Attribution** showing who performed each action
+- **Old/New Values** for status changes (e.g., "OPEN to IN PROGRESS")
+- **Timestamps** for every activity
+- **Real-Time Updates** after each action
+- **Complete Audit Trail** of issue lifecycle
+- **Empty State** for new issues with no activity
+- **Foreign Key Relationships** linking activities to issues and users
 
 #### Navigation & UX
 - **Bottom Navigation Bar** (iOS-style) with Issues and Workers tabs
@@ -406,6 +420,22 @@ class IssueTest {
 - Multi-line text input handling
 - Timestamp display formatting
 
+### Session 14: Issue Activity Timeline & History ✅
+**What:** Complete audit trail of issue changes  
+**Learned:**
+- Activity logging patterns
+- Audit trail implementation
+- Old value vs new value tracking
+- Automatic event logging
+- Timeline UI patterns
+- Reverse chronological display
+- Activity type categorization
+- User action attribution
+- Real-time timeline updates
+- Historical data preservation
+- Icon mapping for activity types
+- Descriptive activity messages
+
 ---
 
 ## 🎓 Key KMP Concepts Mastered
@@ -508,13 +538,13 @@ fun IssueCard(issue: Issue) {
 
 ## 📊 Project Statistics
 
-**Development Time:** ~15 hours  
-**Sessions Completed:** 13 / 27 (48%)  
-**Code Written:** ~3,700 lines  
+**Development Time:** ~16 hours 
+**Sessions Completed:** 14 / 27 (52%)
+**Code Written:** ~4,200 lines  
 **Code Sharing:** ~75%  
 **Screens:** 6 (Login, Issues, Create Issue, Issue Detail, Workers, Add Worker)  
 **ViewModels:** 7  
-**Database Tables:** 3 (Issue, User, Comment)  
+**Database Tables:** 4 (Issue, User, Comment, ActivityLog)  
 **Tests:** 3 passing ✅
 
 ### Platform Status
