@@ -11,6 +11,7 @@ import com.hajducakmarek.fixit.models.CommentWithUser
 import com.hajducakmarek.fixit.models.ActivityLog
 import com.hajducakmarek.fixit.models.ActivityLogWithUser
 import com.hajducakmarek.fixit.models.ActivityType
+import com.hajducakmarek.fixit.models.Photo
 import com.benasher44.uuid.uuid4
 
 class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
@@ -22,7 +23,6 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
             dbQuery.selectAllIssues().executeAsList().map { issue ->
                 Issue(
                     id = issue.id,
-                    photoPath = issue.photoPath,
                     description = issue.description,
                     flatNumber = issue.flatNumber,
                     status = IssueStatus.valueOf(issue.status),
@@ -42,7 +42,6 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
             dbQuery.selectIssueById(id).executeAsOneOrNull()?.let { issue ->
                 Issue(
                     id = issue.id,
-                    photoPath = issue.photoPath,
                     description = issue.description,
                     flatNumber = issue.flatNumber,
                     status = IssueStatus.valueOf(issue.status),
@@ -61,7 +60,6 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
         try {
             dbQuery.insertIssue(
                 id = issue.id,
-                photoPath = issue.photoPath,
                 description = issue.description,
                 flatNumber = issue.flatNumber,
                 status = issue.status.name,
@@ -70,6 +68,7 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 createdAt = issue.createdAt,
                 completedAt = issue.completedAt
             )
+            // Log creation
             logIssueCreation(issue.id, issue.createdBy)
         } catch (e: Exception) {
             throw Exception("Failed to create issue", e)
@@ -319,6 +318,68 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
             activityType = if (isDeleted) ActivityType.COMMENT_DELETED else ActivityType.COMMENT_ADDED,
             oldValue = if (isDeleted) commentId else null,
             newValue = if (!isDeleted) commentId else null,
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        )
+        insertActivity(activity)
+    }
+
+    // Photo operations
+    suspend fun getPhotosByIssue(issueId: String): List<Photo> {
+        return try {
+            dbQuery.selectPhotosByIssue(issueId).executeAsList().map { photoData ->
+                Photo(
+                    id = photoData.id,
+                    issueId = photoData.issueId,
+                    photoPath = photoData.photoPath,
+                    createdAt = photoData.createdAt,
+                    uploadedBy = photoData.uploadedBy
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load photos", e)
+        }
+    }
+
+    suspend fun insertPhoto(photo: Photo) {
+        try {
+            dbQuery.insertPhoto(
+                id = photo.id,
+                issueId = photo.issueId,
+                photoPath = photo.photoPath,
+                createdAt = photo.createdAt,
+                uploadedBy = photo.uploadedBy
+            )
+            logPhotoActivity(photo.issueId, photo.uploadedBy, photo.id, false)
+        } catch (e: Exception) {
+            throw Exception("Failed to add photo", e)
+        }
+    }
+
+    suspend fun deletePhoto(photoId: String, userId: String, issueId: String) {
+        try {
+            dbQuery.deletePhoto(photoId)
+            logPhotoActivity(issueId, userId, photoId, true)
+        } catch (e: Exception) {
+            throw Exception("Failed to delete photo", e)
+        }
+    }
+
+    suspend fun getPhotoCount(issueId: String): Long {
+        return try {
+            dbQuery.countPhotosByIssue(issueId).executeAsOne()
+        } catch (e: Exception) {
+            0L
+        }
+    }
+
+    suspend fun logPhotoActivity(issueId: String, userId: String, photoId: String, isDeleted: Boolean) {
+        val activity = ActivityLog(
+            id = "activity-${uuid4()}",
+            issueId = issueId,
+            userId = userId,
+            activityType = if (isDeleted) ActivityType.PHOTO_DELETED else ActivityType.PHOTO_ADDED,
+            oldValue = if (isDeleted) photoId else null,
+            newValue = if (!isDeleted) photoId else null,
             createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         insertActivity(activity)

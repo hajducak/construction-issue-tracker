@@ -7,6 +7,8 @@ import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.Comment
 import com.hajducakmarek.fixit.models.CommentWithUser
+import com.hajducakmarek.fixit.models.ActivityLogWithUser
+import com.hajducakmarek.fixit.models.Photo
 import com.hajducakmarek.fixit.repository.IssueRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.benasher44.uuid.uuid4
-import com.hajducakmarek.fixit.models.ActivityLogWithUser
 
 class IssueDetailViewModel(
     private val repository: IssueRepository,
@@ -57,11 +58,18 @@ class IssueDetailViewModel(
     private val _isLoadingActivities = MutableStateFlow(false)
     val isLoadingActivities: StateFlow<Boolean> = _isLoadingActivities.asStateFlow()
 
+    private val _photos = MutableStateFlow<List<Photo>>(emptyList())
+    val photos: StateFlow<List<Photo>> = _photos.asStateFlow()
+
+    private val _isLoadingPhotos = MutableStateFlow(false)
+    val isLoadingPhotos: StateFlow<Boolean> = _isLoadingPhotos.asStateFlow()
+
     init {
         loadIssue()
         loadWorkers()
         loadComments()
         loadActivities()
+        loadPhotos()
     }
 
     private fun loadIssue() {
@@ -103,6 +111,19 @@ class IssueDetailViewModel(
                 _error.value = "Failed to load comments: ${e.message ?: "Unknown error"}"
             } finally {
                 _isLoadingComments.value = false
+            }
+        }
+    }
+
+    private fun loadPhotos() {
+        viewModelScope.launch {
+            _isLoadingPhotos.value = true
+            try {
+                _photos.value = repository.getPhotosByIssue(issueId)
+            } catch (e: Exception) {
+                _error.value = "Failed to load photos: ${e.message ?: "Unknown error"}"
+            } finally {
+                _isLoadingPhotos.value = false
             }
         }
     }
@@ -198,6 +219,41 @@ class IssueDetailViewModel(
             } catch (e: Exception) {
                 _isSaving.value = false
                 _error.value = "Failed to assign worker: ${e.message ?: "Unknown error"}"
+            }
+        }
+    }
+
+    fun addPhoto(photoPath: String, userId: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                val photo = Photo(
+                    id = "photo-${uuid4()}",
+                    issueId = issueId,
+                    photoPath = photoPath,
+                    createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+                    uploadedBy = userId
+                )
+                repository.insertPhoto(photo)
+                loadPhotos()
+                loadActivities()
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = "Failed to add photo: ${e.message ?: "Unknown error"}"
+            }
+        }
+    }
+
+    fun deletePhoto(photoId: String, userId: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                repository.deletePhoto(photoId, userId, issueId)
+                loadPhotos()
+                loadActivities()
+                onSuccess()
+            } catch (e: Exception) {
+                _error.value = "Failed to delete photo: ${e.message ?: "Unknown error"}"
             }
         }
     }

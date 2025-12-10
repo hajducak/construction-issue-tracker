@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
@@ -17,6 +18,7 @@ import com.hajducakmarek.fixit.models.CommentWithUser
 import com.hajducakmarek.fixit.models.ActivityLogWithUser
 import com.hajducakmarek.fixit.models.ActivityLog
 import com.hajducakmarek.fixit.models.ActivityType
+import com.hajducakmarek.fixit.models.Photo
 import com.hajducakmarek.fixit.viewmodel.IssueDetailViewModel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -27,7 +29,8 @@ import kotlinx.datetime.toLocalDateTime
 fun IssueDetailScreen(
     viewModel: IssueDetailViewModel,
     currentUser: User,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onTakePhoto: (callback: (String) -> Unit) -> Unit
 ) {
     val issue by viewModel.issue.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -41,6 +44,8 @@ fun IssueDetailScreen(
     val isLoadingComments by viewModel.isLoadingComments.collectAsState()
     val activities by viewModel.activities.collectAsState()
     val isLoadingActivities by viewModel.isLoadingActivities.collectAsState()
+    val photos by viewModel.photos.collectAsState()
+    val isLoadingPhotos by viewModel.isLoadingPhotos.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -169,6 +174,20 @@ fun IssueDetailScreen(
                     },
                     activities = activities,
                     isLoadingActivities = isLoadingActivities,
+                    // Add these:
+                    photos = photos,
+                    isLoadingPhotos = isLoadingPhotos,
+                    onAddPhoto = { photoPath ->
+                        viewModel.addPhoto(photoPath, currentUser.id) {
+                            // Photo added successfully
+                        }
+                    },
+                    onDeletePhoto = { photoId ->
+                        viewModel.deletePhoto(photoId, currentUser.id) {
+                            // Photo deleted successfully
+                        }
+                    },
+                    onTakePhoto = onTakePhoto,  // Need to pass this from IssueDetailScreen params
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
@@ -274,7 +293,12 @@ private fun IssueDetailContent(
     onSendComment: () -> Unit,
     onDeleteComment: (String) -> Unit,
     activities: List<ActivityLogWithUser>,
-    isLoadingActivities: Boolean
+    isLoadingActivities: Boolean,
+    photos: List<Photo>,
+    isLoadingPhotos: Boolean,
+    onAddPhoto: (String) -> Unit,
+    onDeletePhoto: (String) -> Unit,
+    onTakePhoto: (callback: (String) -> Unit) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -282,16 +306,15 @@ private fun IssueDetailContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Photo (if exists)
-        if (issue.photoPath.isNotEmpty()) {
-            IssueImage(
-                photoPath = issue.photoPath,
-                contentDescription = "Issue photo",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(250.dp)
-            )
-        }
+        // Photo Gallery
+        PhotoGallerySection(
+            photos = photos,
+            isLoading = isLoadingPhotos,
+            canEdit = canEdit,
+            onAddPhoto = onAddPhoto,
+            onDeletePhoto = onDeletePhoto,
+            onTakePhoto = onTakePhoto
+        )
 
         // Flat Number
         Card(modifier = Modifier.fillMaxWidth()) {
@@ -905,6 +928,8 @@ private fun getActivityIcon(type: ActivityType): String {
         ActivityType.UNASSIGNED -> "❌"
         ActivityType.COMMENT_ADDED -> "💬"
         ActivityType.COMMENT_DELETED -> "🗑️"
+        ActivityType.PHOTO_ADDED -> "📷"
+        ActivityType.PHOTO_DELETED -> "🖼️"
     }
 }
 
@@ -920,6 +945,166 @@ private fun getActivityDescription(activity: ActivityLog): String {
         ActivityType.UNASSIGNED -> "unassigned the worker"
         ActivityType.COMMENT_ADDED -> "added a comment"
         ActivityType.COMMENT_DELETED -> "deleted a comment"
+        ActivityType.PHOTO_ADDED -> "added a photo"
+        ActivityType.PHOTO_DELETED -> "deleted a photo"
+    }
+}
+
+@Composable
+private fun PhotoGallerySection(
+    photos: List<Photo>,
+    isLoading: Boolean,
+    canEdit: Boolean,
+    onAddPhoto: (String) -> Unit,
+    onDeletePhoto: (String) -> Unit,
+    onTakePhoto: (callback: (String) -> Unit) -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Photos (${photos.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                if (canEdit) {
+                    Button(
+                        onClick = {
+                            onTakePhoto { path ->
+                                onAddPhoto(path)
+                            }
+                        }
+                    ) {
+                        Text("📷 Add")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                photos.isEmpty() -> {
+                    Text(
+                        text = "No photos yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                else -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        photos.forEachIndexed { index, photo ->
+                            PhotoGalleryItem(
+                                photo = photo,
+                                photoIndex = index,
+                                canDelete = canEdit,
+                                onDelete = { onDeletePhoto(photo.id) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoGalleryItem(
+    photo: Photo,
+    photoIndex: Int,
+    canDelete: Boolean,
+    onDelete: () -> Unit
+) {
+    var showFullScreen by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Thumbnail
+            IssueImage(
+                photoPath = photo.photoPath,
+                contentDescription = "Issue photo",
+                modifier = Modifier
+                    .size(80.dp)
+                    .clickable { showFullScreen = true }
+            )
+
+            // Photo info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Photo ${photoIndex + 1}",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Text(
+                    text = formatDate(photo.createdAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Delete button
+            if (canDelete) {
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Text("🗑️")
+                }
+            }
+        }
+    }
+
+    // Full screen photo viewer
+    if (showFullScreen) {
+        FullScreenPhotoDialog(
+            photoPath = photo.photoPath,
+            onDismiss = { showFullScreen = false }
+        )
+    }
+
+    // Delete confirmation
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Photo") },
+            text = { Text("Are you sure you want to delete this photo?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

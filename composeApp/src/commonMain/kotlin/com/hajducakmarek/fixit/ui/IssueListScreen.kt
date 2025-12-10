@@ -155,7 +155,7 @@ fun IssueCard(
     onClick: () -> Unit = {}
 ) {
     var showFullScreenPhoto by remember { mutableStateOf(false) }
-    val hasPhoto = issue.photoPath.isNotEmpty()
+    val hasPhoto = "".isNotEmpty()
 
     Card(
         modifier = Modifier
@@ -170,7 +170,7 @@ fun IssueCard(
                     .padding(16.dp)
             ) {
                 IssueImage(
-                    photoPath = issue.photoPath,
+                    photoPath = "",
                     contentDescription = "Issue photo",
                     modifier = Modifier
                         .size(80.dp)
@@ -184,7 +184,7 @@ fun IssueCard(
 
             if (showFullScreenPhoto) {
                 FullScreenPhotoDialog(
-                    photoPath = issue.photoPath,
+                    photoPath = "",
                     onDismiss = { showFullScreenPhoto = false }
                 )
             }

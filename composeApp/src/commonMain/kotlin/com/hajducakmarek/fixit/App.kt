@@ -197,10 +197,11 @@ private fun MainApp(
                     IssueDetailScreen(
                         viewModel = detailViewModel,
                         currentUser = currentUser,
-                        onNavigateBack = {
-                            currentScreen = Screen.Issues
-                            selectedTab = BottomNavItem.ISSUES
-                            listViewModel.loadIssues()
+                        onNavigateBack = { currentScreen = Screen.Issues },
+                        onTakePhoto = { callback ->
+                            imagePicker.pickImage { path ->
+                                path?.let { callback(it) }
+                            }
                         }
                     )
                 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
+import com.hajducakmarek.fixit.models.Photo
 import com.hajducakmarek.fixit.repository.IssueRepository
 import com.hajducakmarek.fixit.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,8 +24,8 @@ class CreateIssueViewModel(
     private val _description = MutableStateFlow("")
     val description: StateFlow<String> = _description.asStateFlow()
 
-    private val _photoPath = MutableStateFlow("")
-    val photoPath: StateFlow<String> = _photoPath.asStateFlow()
+    private val _photoPaths = MutableStateFlow<List<String>>(emptyList())
+    val photoPaths: StateFlow<List<String>> = _photoPaths.asStateFlow()
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
@@ -70,8 +71,12 @@ class CreateIssueViewModel(
         }
     }
 
-    fun onPhotoSelected(path: String) {
-        _photoPath.value = path
+    fun onPhotoAdded(path: String) {
+        _photoPaths.value = _photoPaths.value + path
+    }
+
+    fun onPhotoRemoved(path: String) {
+        _photoPaths.value = _photoPaths.value - path
     }
 
     fun onWorkerSelected(worker: User?) {
@@ -104,18 +109,32 @@ class CreateIssueViewModel(
         viewModelScope.launch {
             _isSaving.value = true
             try {
+                val issueId = "issue-${uuid4()}"
+                val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+
                 val newIssue = Issue(
-                    id = "issue-${uuid4()}",
-                    photoPath = _photoPath.value,
+                    id = issueId,
                     description = _description.value.trim(),
                     flatNumber = _flatNumber.value.trim(),
                     status = IssueStatus.OPEN,
                     createdBy = createdBy,
                     assignedTo = _selectedWorker.value?.id,
-                    createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+                    createdAt = now,
                     completedAt = null
                 )
                 repository.insertIssue(newIssue)
+
+                _photoPaths.value.forEach { photoPath ->
+                    val photo = Photo(
+                        id = "photo-${uuid4()}",
+                        issueId = issueId,
+                        photoPath = photoPath,
+                        createdAt = now,
+                        uploadedBy = createdBy
+                    )
+                    repository.insertPhoto(photo)
+                }
+
                 _isSaving.value = false
                 onSuccess()
             } catch (e: Exception) {

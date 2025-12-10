@@ -22,17 +22,17 @@ fun CreateIssueScreen(
 ) {
     val flatNumber by viewModel.flatNumber.collectAsState()
     val description by viewModel.description.collectAsState()
-    val photoPath by viewModel.photoPath.collectAsState()
+    val photoPaths by viewModel.photoPaths.collectAsState()  // Changed to photoPaths
     val isSaving by viewModel.isSaving.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val selectedWorker by viewModel.selectedWorker.collectAsState()
-    // Error states
+
     val flatNumberError by viewModel.flatNumberError.collectAsState()
     val descriptionError by viewModel.descriptionError.collectAsState()
     val saveError by viewModel.saveError.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    // Show save error in snackbar
+
     LaunchedEffect(saveError) {
         saveError?.let {
             snackbarHostState.showSnackbar(
@@ -63,7 +63,7 @@ fun CreateIssueScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Flat number input with validation
+            // Flat number input
             OutlinedTextField(
                 value = flatNumber,
                 onValueChange = viewModel::onFlatNumberChanged,
@@ -83,7 +83,7 @@ fun CreateIssueScreen(
                 }
             )
 
-            // Description input with validation
+            // Description input
             OutlinedTextField(
                 value = description,
                 onValueChange = viewModel::onDescriptionChanged,
@@ -110,30 +110,56 @@ fun CreateIssueScreen(
                 }
             )
 
-            // Photo section
-            Button(
-                onClick = {
-                    onTakePhoto { path ->
-                        viewModel.onPhotoSelected(path)
+            // Photo section - UPDATED for multiple photos
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Photos (${photoPaths.size})",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Button(
+                            onClick = {
+                                onTakePhoto { path ->
+                                    viewModel.onPhotoAdded(path)
+                                }
+                            },
+                            enabled = !isSaving
+                        ) {
+                            Text("📷 Add Photo")
+                        }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isSaving
-            ) {
-                Text(if (photoPath.isEmpty()) "📷 Take Photo" else "📷 Retake Photo")
+
+                    if (photoPaths.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Photo grid
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            photoPaths.forEach { photoPath ->
+                                PhotoItem(
+                                    photoPath = photoPath,
+                                    onRemove = { viewModel.onPhotoRemoved(photoPath) },
+                                    enabled = !isSaving
+                                )
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "No photos added yet",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
-            if (photoPath.isNotEmpty()) {
-                IssueImage(
-                    photoPath = photoPath,
-                    contentDescription = "Selected photo",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                )
-            }
-
-            // Worker assignment (Optional)
+            // Worker assignment
             WorkerAssignmentSelector(
                 workers = workers,
                 selectedWorker = selectedWorker,
@@ -162,6 +188,56 @@ fun CreateIssueScreen(
                 } else {
                     Text("Create Issue")
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoItem(
+    photoPath: String,
+    onRemove: () -> Unit,
+    enabled: Boolean
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Thumbnail
+                IssueImage(
+                    photoPath = photoPath,
+                    contentDescription = "Photo thumbnail",
+                    modifier = Modifier.size(60.dp)
+                )
+
+                // Path preview
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Photo",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Text(
+                        text = photoPath.split("/").lastOrNull() ?: photoPath,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+            }
+
+            // Remove button
+            IconButton(
+                onClick = onRemove,
+                enabled = enabled
+            ) {
+                Text("🗑️")
             }
         }
     }
@@ -231,9 +307,7 @@ private fun WorkerAssignmentSelector(
                     workers.forEach { worker ->
                         DropdownMenuItem(
                             text = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text("👷")
                                     Text(worker.name)
                                 }

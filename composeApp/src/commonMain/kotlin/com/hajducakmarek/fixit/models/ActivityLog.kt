@@ -16,7 +16,9 @@ enum class ActivityType {
     ASSIGNED,
     UNASSIGNED,
     COMMENT_ADDED,
-    COMMENT_DELETED
+    COMMENT_DELETED,
+    PHOTO_ADDED,
+    PHOTO_DELETED
 }
 
 data class ActivityLogWithUser(

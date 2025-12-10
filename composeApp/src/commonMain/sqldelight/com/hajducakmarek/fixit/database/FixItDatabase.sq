@@ -8,7 +8,6 @@ CREATE TABLE User (
 -- Issue Table
 CREATE TABLE Issue (
     id TEXT PRIMARY KEY NOT NULL,
-    photoPath TEXT NOT NULL,
     description TEXT NOT NULL,
     flatNumber TEXT NOT NULL,
     status TEXT NOT NULL,
@@ -42,6 +41,17 @@ CREATE TABLE IF NOT EXISTS ActivityLog (
     FOREIGN KEY (userId) REFERENCES User(id)
 );
 
+-- Photo Table
+CREATE TABLE IF NOT EXISTS Photo (
+    id TEXT PRIMARY KEY NOT NULL,
+    issueId TEXT NOT NULL,
+    photoPath TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    uploadedBy TEXT NOT NULL,
+    FOREIGN KEY (issueId) REFERENCES Issue(id),
+    FOREIGN KEY (uploadedBy) REFERENCES User(id)
+);
+
 -- Issue Queries
 selectAllIssues:
 SELECT * FROM Issue;
@@ -53,8 +63,8 @@ selectIssuesByStatus:
 SELECT * FROM Issue WHERE status = ?;
 
 insertIssue:
-INSERT INTO Issue(id, photoPath, description, flatNumber, status, createdBy, assignedTo, createdAt, completedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Issue(id, description, flatNumber, status, createdBy, assignedTo, createdAt, completedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 updateIssueStatus:
 UPDATE Issue
@@ -98,3 +108,17 @@ SELECT * FROM ActivityLog WHERE issueId = ? ORDER BY createdAt DESC;
 insertActivity:
 INSERT INTO ActivityLog(id, issueId, userId, activityType, oldValue, newValue, createdAt)
 VALUES (?, ?, ?, ?, ?, ?, ?);
+
+-- Photo queries
+selectPhotosByIssue:
+SELECT * FROM Photo WHERE issueId = ? ORDER BY createdAt ASC;
+
+insertPhoto:
+INSERT INTO Photo(id, issueId, photoPath, createdAt, uploadedBy)
+VALUES (?, ?, ?, ?, ?);
+
+deletePhoto:
+DELETE FROM Photo WHERE id = ?;
+
+countPhotosByIssue:
+SELECT COUNT(*) FROM Photo WHERE issueId = ?;
