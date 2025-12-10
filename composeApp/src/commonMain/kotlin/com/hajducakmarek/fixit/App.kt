@@ -6,6 +6,8 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +24,7 @@ import com.hajducakmarek.fixit.models.UserRole
 
 sealed class Screen {
     object Login : Screen()
+    object Dashboard : Screen()
     object Issues : Screen()
     object Workers : Screen()
     object Create : Screen()
@@ -35,6 +38,7 @@ enum class BottomNavItem(
     val unselectedIcon: ImageVector,
     val screen: Screen
 ) {
+    DASHBOARD("Dashboard", Icons.Filled.Home, Icons.Outlined.Home, Screen.Dashboard),
     ISSUES("Issues", Icons.Filled.List, Icons.Outlined.List, Screen.Issues),
     WORKERS("Workers", Icons.Filled.Person, Icons.Outlined.Person, Screen.Workers)
 }
@@ -91,13 +95,14 @@ private fun MainApp(
     // ViewModels persist across navigation
     val listViewModel = remember { IssueListViewModel(repository, currentUser) }
     val workerListViewModel = remember { WorkerListViewModel(repository) }
+    val dashboardViewModel = remember { DashboardViewModel(repository, currentUser) }
 
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.Issues) }
-    var selectedTab by remember { mutableStateOf(BottomNavItem.ISSUES) }
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.Dashboard) }
+    var selectedTab by remember { mutableStateOf(BottomNavItem.DASHBOARD) }
 
     // Show bottom nav only on main screens
     val showBottomNav = when (currentScreen) {
-        is Screen.Issues, is Screen.Workers -> true
+        is Screen.Dashboard, is Screen.Issues, is Screen.Workers -> true
         else -> false
     }
 
@@ -137,6 +142,14 @@ private fun MainApp(
         Box(modifier = Modifier.padding(innerPadding)) {
             when (val screen = currentScreen) {
                 is Screen.Login -> { /* Handled above */ }
+
+                is Screen.Dashboard -> {
+                    DashboardScreen(
+                        viewModel = dashboardViewModel,
+                        currentUser = currentUser,
+                        onLogout = onLogout
+                    )
+                }
 
                 is Screen.Issues -> {
                     IssueListScreen(

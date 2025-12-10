@@ -12,6 +12,9 @@ import com.hajducakmarek.fixit.models.ActivityLog
 import com.hajducakmarek.fixit.models.ActivityLogWithUser
 import com.hajducakmarek.fixit.models.ActivityType
 import com.hajducakmarek.fixit.models.Photo
+import com.hajducakmarek.fixit.models.DashboardStatistics
+import com.hajducakmarek.fixit.models.WorkerStatistics
+import com.hajducakmarek.fixit.models.WorkerPersonalStatistics
 import com.benasher44.uuid.uuid4
 
 class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
@@ -383,5 +386,112 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
             createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         insertActivity(activity)
+    }
+
+    // Statistics operations
+    suspend fun getDashboardStatistics(): DashboardStatistics {
+        return try {
+            val allIssues = getAllIssues()
+            val totalIssues = allIssues.size
+
+            val openCount = allIssues.count { it.status == IssueStatus.OPEN }
+            val inProgressCount = allIssues.count { it.status == IssueStatus.IN_PROGRESS }
+            val fixedCount = allIssues.count { it.status == IssueStatus.FIXED }
+            val verifiedCount = allIssues.count { it.status == IssueStatus.VERIFIED }
+
+            val totalWorkers = dbQuery.selectUsersByRole(UserRole.WORKER.name)
+                .executeAsList()
+                .size
+
+            // Fix: Count all photos across all issues
+            val totalPhotos = allIssues.sumOf { issue ->
+                try {
+                    getPhotosByIssue(issue.id).size
+                } catch (e: Exception) {
+                    0
+                }
+            }
+
+            // Fix: Count all comments across all issues
+            val totalComments = allIssues.sumOf { issue ->
+                try {
+                    getCommentsByIssue(issue.id).size
+                } catch (e: Exception) {
+                    0
+                }
+            }
+
+            val completionRate = if (totalIssues > 0) {
+                (verifiedCount.toFloat() / totalIssues.toFloat()) * 100f
+            } else {
+                0f
+            }
+
+            DashboardStatistics(
+                totalIssues = totalIssues,
+                openIssues = openCount,
+                inProgressIssues = inProgressCount,
+                fixedIssues = fixedCount,
+                verifiedIssues = verifiedCount,
+                totalWorkers = totalWorkers,
+                totalPhotos = totalPhotos,
+                totalComments = totalComments,
+                completionRate = completionRate
+            )
+        } catch (e: Exception) {
+            throw Exception("Failed to load statistics", e)
+        }
+    }
+
+    suspend fun getWorkerStatistics(): List<WorkerStatistics> {
+        return try {
+            val workers = getWorkers()
+            val allIssues = getAllIssues()
+
+            workers.map { worker ->
+                val assignedIssues = allIssues.count { it.assignedTo == worker.id }
+                val completedIssues = allIssues.count {
+                    it.assignedTo == worker.id && it.status == IssueStatus.VERIFIED
+                }
+
+                WorkerStatistics(
+                    worker = worker,
+                    assignedIssues = assignedIssues,
+                    completedIssues = completedIssues
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load worker statistics", e)
+        }
+    }
+
+    suspend fun getWorkerPersonalStatistics(workerId: String): WorkerPersonalStatistics {
+        return try {
+            val allIssues = getAllIssues()
+            val myIssues = allIssues.filter { it.assignedTo == workerId }
+
+            val assignedCount = myIssues.size
+            val completedCount = myIssues.count { it.status == IssueStatus.VERIFIED }
+            val openCount = myIssues.count { it.status == IssueStatus.OPEN }
+            val inProgressCount = myIssues.count { it.status == IssueStatus.IN_PROGRESS }
+            val fixedCount = myIssues.count { it.status == IssueStatus.FIXED }
+
+            val completionRate = if (assignedCount > 0) {
+                (completedCount.toFloat() / assignedCount.toFloat()) * 100f
+            } else {
+                0f
+            }
+
+            WorkerPersonalStatistics(
+                assignedToMe = assignedCount,
+                completedByMe = completedCount,
+                openIssues = openCount,
+                inProgressIssues = inProgressCount,
+                fixedIssues = fixedCount,
+                completionRate = completionRate
+            )
+        } catch (e: Exception) {
+            throw Exception("Failed to load personal statistics", e)
+        }
     }
 }
