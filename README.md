@@ -28,7 +28,7 @@ FixIt is a comprehensive issue tracking system designed for construction site ma
 - **Worker Selection** during issue creation
 - **UUID Generation** for all entities
 - **Bottom Navigation** (iOS-style tab bar)
-- **Navigation Tabs**: Issues, Workers
+- **Navigation Tabs**: Dashboard, Issues, Workers
 
 ### Filtering & Search (Session 10)
 - **Text Search** across issue descriptions and flat numbers
@@ -88,10 +88,10 @@ FixIt is a comprehensive issue tracking system designed for construction site ma
 ### Activity Timeline & History (Session 14)
 - **ActivityLog Model** with type, old/new values, timestamp
 - **ActivityLog Database Table** with foreign keys
-- **Activity Types**: Created, Status Changed, Assigned, Unassigned, Comment Added, Comment Deleted
+- **Activity Types**: Created, Status Changed, Assigned, Unassigned, Comment Added, Comment Deleted, Photo Added, Photo Deleted
 - **Automatic Logging** for all issue changes
 - **Timeline UI** in issue detail screen (below comments)
-- **Activity Icons**: ✨ Created, 🔄 Status, 👷 Assigned, ❌ Unassigned, 💬 Comment
+- **Activity Icons**: ✨ Created, 🔄 Status, 👷 Assigned, ❌ Unassigned, 💬 Comment, 📷 Photo Added, 🖼️ Photo Deleted
 - **Activity Descriptions** with old/new value display
 - **Reverse Chronological Order** (newest first)
 - **User Attribution** for all activities
@@ -121,7 +121,7 @@ FixIt is a comprehensive issue tracking system designed for construction site ma
 ### Dashboard & Statistics (Session 16)
 - **Manager Dashboard** with system-wide overview
 - **Worker Dashboard** with personal statistics
-- **Overview Section**: Total issues, completion rate, workers, photos
+- **Overview Section**: Total issues, completion rate, workers, overdue count
 - **Status Breakdown**: Visual progress bars for each status
 - **Worker Performance**: Completion rates for all workers (manager only)
 - **Personal Stats**: Assigned and completed issues (worker view)
@@ -133,6 +133,25 @@ FixIt is a comprehensive issue tracking system designed for construction site ma
 - **Visual Progress Bars**: Color-coded by status
 - **StatCard Components**: Reusable metric cards with icons
 - **Empty State Handling**: Messages for workers with no assignments
+- **Pull-to-Refresh**: Manual statistics refresh
+
+### Due Dates & Priority (Session 17)
+- **Priority Levels**: LOW 🟢, MEDIUM 🟡, HIGH 🟠, URGENT 🔴
+- **Priority Selector** dropdown in create issue screen
+- **Priority Badges** on issue list with color-coded containers
+- **Due Date Picker** with Material Design date picker dialog
+- **Optional Due Dates** for flexible deadline management
+- **Overdue Detection** with automatic calculation
+- **Overdue Warnings**: ⚠️ indicator and red highlighting
+- **Days Until Due** countdown with smart messages ("Due today", "Due in 3 days", "Overdue by 2 days")
+- **Overdue Dashboard Card** showing count of overdue issues
+- **Worker Overdue Tracking** in personal dashboard
+- **Priority Display** on issue detail with icons
+- **Due Date Display** with detailed countdown information
+- **Date Formatting** with timezone-aware display
+- **Color-Coded Priorities**: Different container colors per priority level
+- **Clear Due Date** button for removing deadlines
+- **Overdue Exclusion**: Verified issues not counted as overdue
 
 ## 🏗️ Architecture & Technology Stack
 
@@ -143,13 +162,14 @@ FixIt is a comprehensive issue tracking system designed for construction site ma
 - **Coroutines & Flow** - Asynchronous programming
 - **ViewModel Pattern** - State management
 - **Repository Pattern** - Data layer abstraction
+- **kotlinx.datetime** - Cross-platform date/time handling
 
 ### Platform-Specific
 - **Android**: CameraX for photo capture, SharedPreferences for session
 - **iOS**: UIImagePickerController for photos, UserDefaults for session
 
 ### Database Schema
-- **Tables**: Issue, User, Comment, ActivityLog, Photo
+- **Tables**: Issue (with priority & dueDate), User, Comment, ActivityLog, Photo
 - **Foreign Keys**: Enforcing referential integrity
 - **Queries**: Type-safe SQL with SQLDelight
 
@@ -227,6 +247,8 @@ CREATE TABLE Issue (
     assignedTo TEXT,
     createdAt INTEGER NOT NULL,
     completedAt INTEGER,
+    priority TEXT NOT NULL DEFAULT 'MEDIUM',
+    dueDate INTEGER,
     FOREIGN KEY (createdBy) REFERENCES User(id),
     FOREIGN KEY (assignedTo) REFERENCES User(id)
 )
@@ -440,42 +462,55 @@ open iosApp.xcworkspace
 - Card-based layout composition
 - Default landing screen configuration
 
+### Session 17: Due Dates & Priority ✅
+**What:** Priority levels and due date management  
+**Learned:**
+- Enum-based priority system
+- Optional nullable fields in models
+- Material Design date picker integration
+- Date/time handling with kotlinx.datetime
+- Timezone-aware date calculations
+- Days until due countdown logic
+- Overdue detection algorithms
+- Color-coded UI based on priority/status
+- Pull-to-refresh implementation
+- Auto-refresh with LaunchedEffect
+- Conditional color in composables
+- Smart date display messages
+- Filtering overdue vs completed issues
+- Dashboard metric calculations
+- Breaking schema changes with defaults
+
 ## 📈 Project Statistics
 
-- **Sessions Completed:** 16 / 27 (59%)
-- **Code Written:** ~5,200 lines
-- **Development Time:** ~20 hours
+- **Sessions Completed:** 17 / 27 (63%)
+- **Code Written:** ~5,600 lines
+- **Development Time:** ~22 hours
 - **Screens:** 7 (Login, Dashboard, Issues, Create, Detail, Workers, Add Worker)
 - **ViewModels:** 7
-- **Database Tables:** 5 (Issue, User, Comment, ActivityLog, Photo)
+- **Database Tables:** 5 (Issue with priority/dueDate, User, Comment, ActivityLog, Photo)
 - **Platform Support:** Android ✅, iOS ✅
 
-## 🎯 Next Features (Sessions 17-27)
+## 🎯 Next Features (Sessions 18-27)
 
-### Session 17: Due Dates & Priority
-- Add due dates to issues
-- Priority levels (Low, Medium, High, Urgent)
-- Overdue tracking and highlighting
-- Due date filtering
-- Calendar view
+### Session 18: Export & Reporting
+- PDF report generation
+- Excel export
+- Issue summary reports
+- Photo galleries in reports
 
-### Session 18: Notifications System
+### Session 19: Notifications System
 - Push notifications for assignments
 - Status change notifications
 - Comment notifications
 - Due date reminders
 
-### Session 19: Search & Advanced Filtering
+### Session 20: Search & Advanced Filtering
 - Full-text search across all fields
 - Date range filters
 - Multi-select filters
+- Priority and due date filters
 - Saved filter presets
-
-### Session 20: Export & Reporting
-- PDF report generation
-- Excel export
-- Issue summary reports
-- Photo galleries in reports
 
 ### Session 21: Offline Support
 - Offline-first architecture
