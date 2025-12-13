@@ -15,6 +15,7 @@ import com.hajducakmarek.fixit.models.Photo
 import com.hajducakmarek.fixit.models.DashboardStatistics
 import com.hajducakmarek.fixit.models.WorkerStatistics
 import com.hajducakmarek.fixit.models.WorkerPersonalStatistics
+import com.hajducakmarek.fixit.models.IssuePriority
 import com.benasher44.uuid.uuid4
 
 class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
@@ -32,7 +33,9 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                     createdBy = issue.createdBy,
                     assignedTo = issue.assignedTo,
                     createdAt = issue.createdAt,
-                    completedAt = issue.completedAt
+                    completedAt = issue.completedAt,
+                    priority = IssuePriority.valueOf(issue.priority),
+                    dueDate = issue.dueDate
                 )
             }
         } catch (e: Exception) {
@@ -51,7 +54,9 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                     createdBy = issue.createdBy,
                     assignedTo = issue.assignedTo,
                     createdAt = issue.createdAt,
-                    completedAt = issue.completedAt
+                    completedAt = issue.completedAt,
+                    priority = IssuePriority.valueOf(issue.priority),
+                    dueDate = issue.dueDate
                 )
             }
         } catch (e: Exception) {
@@ -69,12 +74,36 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 createdBy = issue.createdBy,
                 assignedTo = issue.assignedTo,
                 createdAt = issue.createdAt,
-                completedAt = issue.completedAt
+                completedAt = issue.completedAt,
+                priority = issue.priority.name,
+                dueDate = issue.dueDate
             )
             // Log creation
             logIssueCreation(issue.id, issue.createdBy)
         } catch (e: Exception) {
             throw Exception("Failed to create issue", e)
+        }
+    }
+
+    suspend fun getOverdueIssues(): List<Issue> {
+        return try {
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+            dbQuery.selectOverdueIssues(now).executeAsList().map { issue ->
+                Issue(
+                    id = issue.id,
+                    description = issue.description,
+                    flatNumber = issue.flatNumber,
+                    status = IssueStatus.valueOf(issue.status),
+                    createdBy = issue.createdBy,
+                    assignedTo = issue.assignedTo,
+                    createdAt = issue.createdAt,
+                    completedAt = issue.completedAt,
+                    priority = IssuePriority.valueOf(issue.priority),
+                    dueDate = issue.dueDate
+                )
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to load overdue issues", e)
         }
     }
 
@@ -403,7 +432,6 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 .executeAsList()
                 .size
 
-            // Fix: Count all photos across all issues
             val totalPhotos = allIssues.sumOf { issue ->
                 try {
                     getPhotosByIssue(issue.id).size
@@ -412,7 +440,6 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 }
             }
 
-            // Fix: Count all comments across all issues
             val totalComments = allIssues.sumOf { issue ->
                 try {
                     getCommentsByIssue(issue.id).size
@@ -427,6 +454,13 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 0f
             }
 
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+            val overdueCount = allIssues.count { issue ->
+                issue.dueDate != null &&
+                        issue.dueDate < now &&
+                        issue.status != IssueStatus.VERIFIED
+            }
+
             DashboardStatistics(
                 totalIssues = totalIssues,
                 openIssues = openCount,
@@ -436,7 +470,8 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 totalWorkers = totalWorkers,
                 totalPhotos = totalPhotos,
                 totalComments = totalComments,
-                completionRate = completionRate
+                completionRate = completionRate,
+                overdueIssues = overdueCount
             )
         } catch (e: Exception) {
             throw Exception("Failed to load statistics", e)
@@ -482,13 +517,21 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
                 0f
             }
 
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+            val overdueCount = myIssues.count { issue ->
+                issue.dueDate != null &&
+                        issue.dueDate < now &&
+                        issue.status != IssueStatus.VERIFIED
+            }
+
             WorkerPersonalStatistics(
                 assignedToMe = assignedCount,
                 completedByMe = completedCount,
                 openIssues = openCount,
                 inProgressIssues = inProgressCount,
                 fixedIssues = fixedCount,
-                completionRate = completionRate
+                completionRate = completionRate,
+                overdueIssues = overdueCount
             )
         } catch (e: Exception) {
             throw Exception("Failed to load personal statistics", e)

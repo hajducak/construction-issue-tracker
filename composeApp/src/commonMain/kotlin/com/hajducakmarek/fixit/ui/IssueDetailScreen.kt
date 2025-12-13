@@ -417,6 +417,96 @@ private fun IssueDetailContent(
             }
         }
 
+        // Priority
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Priority",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = getPriorityIcon(issue.priority),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = issue.priority.name,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+        }
+
+        // Due Date
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Due Date",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                if (issue.dueDate != null) {
+                    val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                    val isOverdue = issue.dueDate < now && issue.status != IssueStatus.VERIFIED
+                    val daysUntilDue = ((issue.dueDate - now) / (1000 * 60 * 60 * 24)).toInt()
+
+                    Column {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isOverdue) "⚠️" else "📅",
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                            Text(
+                                text = formatDateDetail(issue.dueDate),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (isOverdue) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = when {
+                                isOverdue -> "Overdue by ${-daysUntilDue} day(s)"
+                                daysUntilDue == 0 -> "Due today"
+                                daysUntilDue == 1 -> "Due tomorrow"
+                                else -> "Due in $daysUntilDue day(s)"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isOverdue) {
+                                MaterialTheme.colorScheme.error
+                            } else if (daysUntilDue <= 3) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "No due date set",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // Comments
         CommentsSection(
             comments = comments,
             commentText = commentText,
@@ -428,11 +518,27 @@ private fun IssueDetailContent(
             onDeleteComment = onDeleteComment
         )
 
+        // Activity timeline
         ActivityTimeline(
             activities = activities,
             isLoading = isLoadingActivities
         )
     }
+}
+
+private fun getPriorityIcon(priority: com.hajducakmarek.fixit.models.IssuePriority): String {
+    return when (priority) {
+        com.hajducakmarek.fixit.models.IssuePriority.LOW -> "🟢"
+        com.hajducakmarek.fixit.models.IssuePriority.MEDIUM -> "🟡"
+        com.hajducakmarek.fixit.models.IssuePriority.HIGH -> "🟠"
+        com.hajducakmarek.fixit.models.IssuePriority.URGENT -> "🔴"
+    }
+}
+
+private fun formatDateDetail(timestamp: Long): String {
+    val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(timestamp)
+    val dateTime = instant.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    return "${dateTime.dayOfMonth}/${dateTime.monthNumber}/${dateTime.year}"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

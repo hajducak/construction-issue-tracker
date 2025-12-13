@@ -14,7 +14,9 @@ CREATE TABLE Issue (
     createdBy TEXT NOT NULL,
     assignedTo TEXT,
     createdAt INTEGER NOT NULL,
-    completedAt INTEGER
+    completedAt INTEGER,
+    priority TEXT NOT NULL DEFAULT 'MEDIUM',
+    dueDate INTEGER
 );
 
 -- Comments Table
@@ -63,8 +65,8 @@ selectIssuesByStatus:
 SELECT * FROM Issue WHERE status = ?;
 
 insertIssue:
-INSERT INTO Issue(id, description, flatNumber, status, createdBy, assignedTo, createdAt, completedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Issue(id, description, flatNumber, status, createdBy, assignedTo, createdAt, completedAt, priority, dueDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateIssueStatus:
 UPDATE Issue
@@ -75,6 +77,12 @@ updateIssueAssignment:
 UPDATE Issue
 SET assignedTo = :assignedTo
 WHERE id = :id;
+
+selectIssuesByPriority:
+SELECT * FROM Issue WHERE priority = ?;
+
+selectOverdueIssues:
+SELECT * FROM Issue WHERE dueDate IS NOT NULL AND dueDate < ? AND status != 'VERIFIED';
 
 -- User Queries
 selectAllUsers:

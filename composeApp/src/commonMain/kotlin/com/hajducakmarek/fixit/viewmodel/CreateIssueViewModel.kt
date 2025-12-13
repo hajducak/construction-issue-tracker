@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
+import com.hajducakmarek.fixit.models.IssuePriority
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.Photo
 import com.hajducakmarek.fixit.repository.IssueRepository
@@ -26,6 +27,12 @@ class CreateIssueViewModel(
 
     private val _photoPaths = MutableStateFlow<List<String>>(emptyList())
     val photoPaths: StateFlow<List<String>> = _photoPaths.asStateFlow()
+
+    private val _priority = MutableStateFlow(IssuePriority.MEDIUM)
+    val priority: StateFlow<IssuePriority> = _priority.asStateFlow()
+
+    private val _dueDate = MutableStateFlow<Long?>(null)
+    val dueDate: StateFlow<Long?> = _dueDate.asStateFlow()
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
@@ -83,6 +90,14 @@ class CreateIssueViewModel(
         _selectedWorker.value = worker
     }
 
+    fun onPrioritySelected(priority: IssuePriority) {
+        _priority.value = priority
+    }
+
+    fun onDueDateSelected(timestamp: Long?) {
+        _dueDate.value = timestamp
+    }
+
     private fun validateForm(): Boolean {
         var isValid = true
 
@@ -120,7 +135,9 @@ class CreateIssueViewModel(
                     createdBy = createdBy,
                     assignedTo = _selectedWorker.value?.id,
                     createdAt = now,
-                    completedAt = null
+                    completedAt = null,
+                    priority = _priority.value,
+                    dueDate = _dueDate.value
                 )
                 repository.insertIssue(newIssue)
 

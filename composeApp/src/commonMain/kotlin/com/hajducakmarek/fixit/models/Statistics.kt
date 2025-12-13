@@ -9,7 +9,8 @@ data class DashboardStatistics(
     val totalWorkers: Int,
     val totalPhotos: Int,
     val totalComments: Int,
-    val completionRate: Float
+    val completionRate: Float,
+    val overdueIssues: Int
 )
 
 data class WorkerStatistics(
@@ -24,5 +25,6 @@ data class WorkerPersonalStatistics(
     val openIssues: Int,
     val inProgressIssues: Int,
     val fixedIssues: Int,
-    val completionRate: Float
+    val completionRate: Float,
+    val overdueIssues: Int
 )

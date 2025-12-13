@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +29,10 @@ fun DashboardScreen(
     val error by viewModel.error.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadStatistics()
+    }
 
     LaunchedEffect(error) {
         error?.let {
@@ -56,57 +62,66 @@ fun DashboardScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            currentUser.role == UserRole.MANAGER && statistics == null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No data available")
-                }
-            }
-            currentUser.role == UserRole.WORKER && workerPersonalStats == null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No data available")
-                }
-            }
-            else -> {
-                if (currentUser.role == UserRole.MANAGER) {
-                    // Manager dashboard
-                    DashboardContent(
-                        statistics = statistics!!,
-                        workerStats = workerStats,
-                        currentUser = currentUser,
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = { viewModel.loadStatistics() },
+            modifier = Modifier.fillMaxSize().padding(padding)
+        ) {
+            when {
+                isLoading -> {
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(padding)
-                    )
-                } else {
-                    // Worker dashboard
-                    WorkerDashboardContent(
-                        personalStats = workerPersonalStats!!,
-                        currentUser = currentUser,
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                currentUser.role == UserRole.MANAGER && statistics == null -> {
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(padding)
-                    )
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No data available")
+                    }
+                }
+
+                currentUser.role == UserRole.WORKER && workerPersonalStats == null -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No data available")
+                    }
+                }
+
+                else -> {
+                    if (currentUser.role == UserRole.MANAGER) {
+                        // Manager dashboard
+                        DashboardContent(
+                            statistics = statistics!!,
+                            workerStats = workerStats,
+                            currentUser = currentUser,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding)
+                        )
+                    } else {
+                        // Worker dashboard
+                        WorkerDashboardContent(
+                            personalStats = workerPersonalStats!!,
+                            currentUser = currentUser,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding)
+                        )
+                    }
                 }
             }
         }
@@ -192,10 +207,15 @@ private fun OverviewSection(
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    title = "Photos",
-                    value = statistics.totalPhotos.toString(),
-                    icon = "📷",
-                    modifier = Modifier.weight(1f)
+                    title = "Overdue",
+                    value = statistics.overdueIssues.toString(),
+                    icon = "⚠️",
+                    modifier = Modifier.weight(1f),
+                    containerColor = if (statistics.overdueIssues > 0) {
+                        MaterialTheme.colorScheme.errorContainer
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    }
                 )
             }
         }
@@ -207,12 +227,13 @@ private fun StatCard(
     title: String,
     value: String,
     icon: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    containerColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primaryContainer
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = containerColor
         )
     ) {
         Column(
@@ -446,6 +467,17 @@ private fun WorkerDashboardContent(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                if (personalStats.overdueIssues > 0) {
+                    StatCard(
+                        title = "Overdue Issues",
+                        value = personalStats.overdueIssues.toString(),
+                        icon = "⚠️",
+                        modifier = Modifier.fillMaxWidth(),
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 // Completion rate card
                 Card(

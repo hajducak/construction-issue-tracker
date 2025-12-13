@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
 import com.hajducakmarek.fixit.models.UserRole
-
+import kotlinx.datetime.toLocalDateTime
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IssueListScreen(
@@ -202,11 +202,20 @@ fun IssueCard(
 @Composable
 private fun IssueDetails(issue: Issue, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        Text(
-            text = issue.flatNumber,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Text(
+                text = issue.flatNumber,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // Priority badge
+            PriorityBadge(priority = issue.priority)
+        }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = issue.description,
@@ -215,19 +224,106 @@ private fun IssueDetails(issue: Issue, modifier: Modifier = Modifier) {
             overflow = TextOverflow.Ellipsis
         )
         Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = issue.status.name.replace("_", " "),
+                style = MaterialTheme.typography.labelSmall,
+                color = when(issue.status) {
+                    com.hajducakmarek.fixit.models.IssueStatus.OPEN ->
+                        MaterialTheme.colorScheme.error
+                    com.hajducakmarek.fixit.models.IssueStatus.IN_PROGRESS ->
+                        MaterialTheme.colorScheme.tertiary
+                    com.hajducakmarek.fixit.models.IssueStatus.FIXED ->
+                        MaterialTheme.colorScheme.primary
+                    com.hajducakmarek.fixit.models.IssueStatus.VERIFIED ->
+                        MaterialTheme.colorScheme.secondary
+                }
+            )
+
+            // Due date indicator
+            issue.dueDate?.let { dueDate ->
+                DueDateIndicator(dueDate = dueDate, status = issue.status)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PriorityBadge(priority: com.hajducakmarek.fixit.models.IssuePriority) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = when (priority) {
+                com.hajducakmarek.fixit.models.IssuePriority.LOW ->
+                    MaterialTheme.colorScheme.secondaryContainer
+                com.hajducakmarek.fixit.models.IssuePriority.MEDIUM ->
+                    MaterialTheme.colorScheme.tertiaryContainer
+                com.hajducakmarek.fixit.models.IssuePriority.HIGH ->
+                    MaterialTheme.colorScheme.primaryContainer
+                com.hajducakmarek.fixit.models.IssuePriority.URGENT ->
+                    MaterialTheme.colorScheme.errorContainer
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Text(
+                text = getPriorityIcon(priority),
+                style = MaterialTheme.typography.labelSmall
+            )
+            Text(
+                text = priority.name,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
+}
+
+@Composable
+private fun DueDateIndicator(
+    dueDate: Long,
+    status: com.hajducakmarek.fixit.models.IssueStatus
+) {
+    val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+    val isOverdue = dueDate < now && status != com.hajducakmarek.fixit.models.IssueStatus.VERIFIED
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
         Text(
-            text = issue.status.name.replace("_", " "),
+            text = if (isOverdue) "⚠️" else "📅",
+            style = MaterialTheme.typography.labelSmall
+        )
+        Text(
+            text = formatDate(dueDate),
             style = MaterialTheme.typography.labelSmall,
-            color = when(issue.status) {
-                com.hajducakmarek.fixit.models.IssueStatus.OPEN ->
-                    MaterialTheme.colorScheme.error
-                com.hajducakmarek.fixit.models.IssueStatus.IN_PROGRESS ->
-                    MaterialTheme.colorScheme.tertiary
-                com.hajducakmarek.fixit.models.IssueStatus.FIXED ->
-                    MaterialTheme.colorScheme.primary
-                com.hajducakmarek.fixit.models.IssueStatus.VERIFIED ->
-                    MaterialTheme.colorScheme.secondary
+            color = if (isOverdue) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
             }
         )
     }
+}
+
+private fun getPriorityIcon(priority: com.hajducakmarek.fixit.models.IssuePriority): String {
+    return when (priority) {
+        com.hajducakmarek.fixit.models.IssuePriority.LOW -> "🟢"
+        com.hajducakmarek.fixit.models.IssuePriority.MEDIUM -> "🟡"
+        com.hajducakmarek.fixit.models.IssuePriority.HIGH -> "🟠"
+        com.hajducakmarek.fixit.models.IssuePriority.URGENT -> "🔴"
+    }
+}
+
+private fun formatDate(timestamp: Long): String {
+    val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(timestamp)
+    val dateTime = instant.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    return "${dateTime.dayOfMonth}/${dateTime.monthNumber}/${dateTime.year}"
 }

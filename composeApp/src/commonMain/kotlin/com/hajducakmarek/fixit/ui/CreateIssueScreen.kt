@@ -6,11 +6,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.viewmodel.CreateIssueViewModel
+import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,11 +26,12 @@ fun CreateIssueScreen(
 ) {
     val flatNumber by viewModel.flatNumber.collectAsState()
     val description by viewModel.description.collectAsState()
-    val photoPaths by viewModel.photoPaths.collectAsState()  // Changed to photoPaths
+    val photoPaths by viewModel.photoPaths.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val selectedWorker by viewModel.selectedWorker.collectAsState()
-
+    val priority by viewModel.priority.collectAsState()
+    val dueDate by viewModel.dueDate.collectAsState()
     val flatNumberError by viewModel.flatNumberError.collectAsState()
     val descriptionError by viewModel.descriptionError.collectAsState()
     val saveError by viewModel.saveError.collectAsState()
@@ -164,6 +169,18 @@ fun CreateIssueScreen(
                 workers = workers,
                 selectedWorker = selectedWorker,
                 onWorkerSelected = viewModel::onWorkerSelected,
+                enabled = !isSaving
+            )
+
+            PrioritySelector(
+                selectedPriority = priority,
+                onPrioritySelected = viewModel::onPrioritySelected,
+                enabled = !isSaving
+            )
+
+            DueDateSelector(
+                selectedDate = dueDate,
+                onDateSelected = viewModel::onDueDateSelected,
                 enabled = !isSaving
             )
 
@@ -327,4 +344,183 @@ private fun WorkerAssignmentSelector(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PrioritySelector(
+    selectedPriority: com.hajducakmarek.fixit.models.IssuePriority,
+    onPrioritySelected: (com.hajducakmarek.fixit.models.IssuePriority) -> Unit,
+    enabled: Boolean
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Priority",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded && enabled }
+            ) {
+                OutlinedTextField(
+                    value = selectedPriority.name,
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
+                    leadingIcon = {
+                        Text(getPriorityIcon(selectedPriority))
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    enabled = enabled,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    com.hajducakmarek.fixit.models.IssuePriority.entries.forEach { priority ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(getPriorityIcon(priority))
+                                    Text(priority.name)
+                                }
+                            },
+                            onClick = {
+                                onPrioritySelected(priority)
+                                expanded = false
+                            },
+                            leadingIcon = {
+                                if (priority == selectedPriority) {
+                                    Text("✓")
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun getPriorityIcon(priority: com.hajducakmarek.fixit.models.IssuePriority): String {
+    return when (priority) {
+        com.hajducakmarek.fixit.models.IssuePriority.LOW -> "🟢"
+        com.hajducakmarek.fixit.models.IssuePriority.MEDIUM -> "🟡"
+        com.hajducakmarek.fixit.models.IssuePriority.HIGH -> "🟠"
+        com.hajducakmarek.fixit.models.IssuePriority.URGENT -> "🔴"
+    }
+}
+
+@Composable
+private fun DueDateSelector(
+    selectedDate: Long?,
+    onDateSelected: (Long?) -> Unit,
+    enabled: Boolean
+) {
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Due Date (Optional)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Text("📅")
+                        Text(
+                            text = if (selectedDate != null) {
+                                formatDate(selectedDate)
+                            } else {
+                                "Set Due Date"
+                            }
+                        )
+                    }
+                }
+
+                if (selectedDate != null) {
+                    OutlinedButton(
+                        onClick = { onDateSelected(null) },
+                        enabled = enabled
+                    ) {
+                        Text("Clear")
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDatePicker) {
+        SimpleDatePickerDialog(
+            onDateSelected = { timestamp ->
+                onDateSelected(timestamp)
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SimpleDatePickerDialog(
+    onDateSelected: (Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { onDateSelected(it) }
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
+    }
+}
+
+private fun formatDate(timestamp: Long): String {
+    val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(timestamp)
+    val dateTime = instant.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    return "${dateTime.dayOfMonth}/${dateTime.monthNumber}/${dateTime.year}"
 }
