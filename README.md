@@ -153,6 +153,23 @@ FixIt is a comprehensive issue tracking system designed for construction site ma
 - **Clear Due Date** button for removing deadlines
 - **Overdue Exclusion**: Verified issues not counted as overdue
 
+### Export & Reporting (Session 18)
+- **PDF Export System** with platform-specific implementations
+- **Single Issue Export**: Generate detailed PDF report for any issue
+- **Bulk Export**: Export all issues to comprehensive PDF report
+- **Android PDF Generation**: Native PdfDocument API with custom canvas drawing
+- **iOS PDF Generation**: Native UIGraphics PDF context with CoreGraphics
+- **Professional Formatting**: Tables, colors, proper typography
+- **Priority Icons**: Emoji-based priority display in PDFs
+- **Overdue Warnings**: Red highlighting for overdue issues in exports
+- **Text Wrapping**: Automatic line breaking for long descriptions
+- **File Management**: Save to Downloads (Android) / Documents (iOS)
+- **Unique Filenames**: Timestamp-based naming prevents overwrites
+- **Export UI**: Buttons in issue detail and issue list screens
+- **Loading States**: Spinners and disabled states during export
+- **Success Feedback**: Snackbar notifications with file location
+- **Error Handling**: Graceful failure with user-friendly messages
+
 ## 🏗️ Architecture & Technology Stack
 
 ### Core Technologies
@@ -165,8 +182,8 @@ FixIt is a comprehensive issue tracking system designed for construction site ma
 - **kotlinx.datetime** - Cross-platform date/time handling
 
 ### Platform-Specific
-- **Android**: CameraX for photo capture, SharedPreferences for session
-- **iOS**: UIImagePickerController for photos, UserDefaults for session
+- **Android**: CameraX for photo capture, SharedPreferences for session, PdfDocument for exports
+- **iOS**: UIImagePickerController for photos, UserDefaults for session, UIGraphics for exports
 
 ### Database Schema
 - **Tables**: Issue (with priority & dueDate), User, Comment, ActivityLog, Photo
@@ -207,7 +224,8 @@ composeApp/
 │   │   │   │   ├── DashboardScreen.kt
 │   │   │   │   └── CommonUI.kt
 │   │   │   ├── utils/           # Utilities
-│   │   │   │   └── Validation.kt
+│   │   │   │   ├── Validation.kt
+│   │   │   │   └── PdfExporter.kt
 │   │   │   ├── session/         # Session management
 │   │   │   │   └── UserSession.kt (expect)
 │   │   │   ├── platform/        # Platform interfaces
@@ -224,6 +242,7 @@ composeApp/
 │   │       ├── database/DatabaseDriverFactory.kt
 │   │       ├── session/UserSession.kt
 │   │       ├── platform/ImagePicker.kt
+│   │       ├── utils/PdfExporter.android.kt
 │   │       └── ui/CameraOverlay.kt
 │   └── iosMain/                 # iOS-specific
 │       └── kotlin/com/hajducakmarek/fixit/
@@ -231,6 +250,7 @@ composeApp/
 │           ├── database/DatabaseDriverFactory.kt
 │           ├── session/UserSession.kt
 │           ├── platform/ImagePicker.kt
+│           ├── utils/PdfExporter.ios.kt
 │           └── ui/CameraOverlay.kt
 ```
 
@@ -481,36 +501,53 @@ open iosApp.xcworkspace
 - Dashboard metric calculations
 - Breaking schema changes with defaults
 
+### Session 18: Export & Reporting ✅
+**What:** PDF generation with platform-specific implementations  
+**Learned:**
+- expect/actual pattern for platform-specific APIs
+- Android PdfDocument API usage
+- iOS UIGraphics PDF context
+- Canvas/CoreGraphics drawing
+- Custom text rendering and wrapping
+- Paint/NSFont typography systems
+- File system access (Downloads/Documents)
+- Platform-specific file paths
+- Unique filename generation with timestamps
+- Text measurement and wrapping algorithms
+- Color application in PDFs
+- Table layout in generated documents
+- Triple return types for complex data
+- Export state management in ViewModels
+- Button loading states with spinners
+- Snackbar success notifications
+- Platform differences in PDF generation
+- Native API advantages vs third-party libraries
+
 ## 📈 Project Statistics
 
-- **Sessions Completed:** 17 / 27 (63%)
-- **Code Written:** ~5,600 lines
-- **Development Time:** ~22 hours
+- **Sessions Completed:** 18 / 27 (67%)
+- **Code Written:** ~6,100 lines
+- **Development Time:** ~24 hours
 - **Screens:** 7 (Login, Dashboard, Issues, Create, Detail, Workers, Add Worker)
 - **ViewModels:** 7
 - **Database Tables:** 5 (Issue with priority/dueDate, User, Comment, ActivityLog, Photo)
 - **Platform Support:** Android ✅, iOS ✅
 
-## 🎯 Next Features (Sessions 18-27)
+## 🎯 Next Features (Sessions 19-27)
 
-### Session 18: Export & Reporting
-- PDF report generation
-- Excel export
-- Issue summary reports
-- Photo galleries in reports
+### Session 19: Advanced Filtering & Search
+- Priority filter dropdown
+- Due date range filter
+- Overdue issues filter
+- Multiple filter combinations
+- Filter chips UI
+- Save filter presets
 
-### Session 19: Notifications System
+### Session 20: Notifications System
 - Push notifications for assignments
 - Status change notifications
 - Comment notifications
 - Due date reminders
-
-### Session 20: Search & Advanced Filtering
-- Full-text search across all fields
-- Date range filters
-- Multi-select filters
-- Priority and due date filters
-- Saved filter presets
 
 ### Session 21: Offline Support
 - Offline-first architecture
