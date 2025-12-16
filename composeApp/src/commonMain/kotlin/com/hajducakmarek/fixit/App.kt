@@ -21,6 +21,7 @@ import com.hajducakmarek.fixit.viewmodel.*
 import com.hajducakmarek.fixit.platform.ImagePicker
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
+import com.hajducakmarek.fixit.utils.PdfExporter
 
 sealed class Screen {
     object Login : Screen()
@@ -47,7 +48,8 @@ enum class BottomNavItem(
 fun App(
     databaseDriverFactory: DatabaseDriverFactory,
     imagePicker: ImagePicker,
-    userSession: UserSession
+    userSession: UserSession,
+    pdfExporter: PdfExporter
 ) {
     MaterialTheme {
         val repository = remember { IssueRepository(databaseDriverFactory) }
@@ -73,6 +75,7 @@ fun App(
                 repository = repository,
                 imagePicker = imagePicker,
                 userSession = userSession,
+                pdfExporter = pdfExporter,
                 currentUser = currentUser!!,
                 onLogout = {
                     userSession.clearUser()
@@ -89,6 +92,7 @@ private fun MainApp(
     repository: IssueRepository,
     imagePicker: ImagePicker,
     userSession: UserSession,
+    pdfExporter: PdfExporter,
     currentUser: User,
     onLogout: () -> Unit
 ) {
@@ -164,7 +168,8 @@ private fun MainApp(
                         onIssueClick = { issue ->
                             currentScreen = Screen.IssueDetail(issue.id)
                         },
-                        onLogout = onLogout
+                        onLogout = onLogout,
+                        pdfExporter = pdfExporter
                     )
                 }
 
@@ -215,7 +220,8 @@ private fun MainApp(
                             imagePicker.pickImage { path ->
                                 path?.let { callback(it) }
                             }
-                        }
+                        },
+                        pdfExporter = pdfExporter
                     )
                 }
 

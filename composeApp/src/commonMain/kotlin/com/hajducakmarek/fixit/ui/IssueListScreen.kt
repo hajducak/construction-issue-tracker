@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.hajducakmarek.fixit.utils.PdfExporter
 import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.viewmodel.IssueListViewModel
 import com.hajducakmarek.fixit.models.UserRole
@@ -23,7 +24,8 @@ fun IssueListScreen(
     currentUser: com.hajducakmarek.fixit.models.User,
     onAddClick: () -> Unit = {},
     onIssueClick: (Issue) -> Unit = {},
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    pdfExporter: PdfExporter
 ) {
     val issues by viewModel.issues.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -33,6 +35,8 @@ fun IssueListScreen(
     val selectedWorker by viewModel.selectedWorker.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val activeFilterCount by viewModel.activeFilterCount.collectAsState()
+    val isExportingAll by viewModel.isExportingAll.collectAsState()
+    val exportAllSuccess by viewModel.exportAllSuccess.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -47,6 +51,16 @@ fun IssueListScreen(
         }
     }
 
+    LaunchedEffect(exportAllSuccess) {
+        exportAllSuccess?.let {
+            snackbarHostState.showSnackbar(
+                message = "All issues exported to: ${it.split("/").lastOrNull() ?: "Documents"}",
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearExportAllSuccess()
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadIssues()
     }
@@ -56,6 +70,28 @@ fun IssueListScreen(
             TopAppBar(
                 title = { Text("Issues") },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            if (!isExportingAll) {
+                                viewModel.exportAllIssuesToPdf(pdfExporter) { filePath ->
+                                    // Export successful
+                                }
+                            }
+                        },
+                        enabled = !isExportingAll && issues.isNotEmpty()
+                    ) {
+                        if (isExportingAll) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "📋",
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                        }
+                    }
                     Text(
                         text = "${currentUser.name} (${currentUser.role.name})",
                         style = MaterialTheme.typography.labelMedium,

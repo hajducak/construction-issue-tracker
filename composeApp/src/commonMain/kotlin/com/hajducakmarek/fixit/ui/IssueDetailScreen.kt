@@ -20,6 +20,7 @@ import com.hajducakmarek.fixit.models.ActivityLog
 import com.hajducakmarek.fixit.models.ActivityType
 import com.hajducakmarek.fixit.models.Photo
 import com.hajducakmarek.fixit.viewmodel.IssueDetailViewModel
+import com.hajducakmarek.fixit.utils.PdfExporter
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -30,7 +31,8 @@ fun IssueDetailScreen(
     viewModel: IssueDetailViewModel,
     currentUser: User,
     onNavigateBack: () -> Unit,
-    onTakePhoto: (callback: (String) -> Unit) -> Unit
+    onTakePhoto: (callback: (String) -> Unit) -> Unit,
+    pdfExporter: PdfExporter
 ) {
     val issue by viewModel.issue.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -46,6 +48,8 @@ fun IssueDetailScreen(
     val isLoadingActivities by viewModel.isLoadingActivities.collectAsState()
     val photos by viewModel.photos.collectAsState()
     val isLoadingPhotos by viewModel.isLoadingPhotos.collectAsState()
+    val isExporting by viewModel.isExporting.collectAsState()
+    val exportSuccess by viewModel.exportSuccess.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -65,6 +69,16 @@ fun IssueDetailScreen(
                 duration = SnackbarDuration.Long
             )
             viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(exportSuccess) {
+        exportSuccess?.let {
+            snackbarHostState.showSnackbar(
+                message = "PDF exported successfully to: ${it.split("/").lastOrNull() ?: "Downloads"}",
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearExportSuccess()
         }
     }
 
@@ -174,7 +188,6 @@ fun IssueDetailScreen(
                     },
                     activities = activities,
                     isLoadingActivities = isLoadingActivities,
-                    // Add these:
                     photos = photos,
                     isLoadingPhotos = isLoadingPhotos,
                     onAddPhoto = { photoPath ->
@@ -187,7 +200,14 @@ fun IssueDetailScreen(
                             // Photo deleted successfully
                         }
                     },
-                    onTakePhoto = onTakePhoto,  // Need to pass this from IssueDetailScreen params
+                    onTakePhoto = onTakePhoto,
+                    isExporting = isExporting,
+                    onExportPdf = {  // Change to simple callback
+                        viewModel.exportIssueToPdf(pdfExporter) { filePath ->
+                            // Export successful
+                        }
+                    },
+                    pdfExporter = pdfExporter,  // Pass pdfExporter
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
@@ -298,7 +318,10 @@ private fun IssueDetailContent(
     isLoadingPhotos: Boolean,
     onAddPhoto: (String) -> Unit,
     onDeletePhoto: (String) -> Unit,
-    onTakePhoto: (callback: (String) -> Unit) -> Unit
+    onTakePhoto: (callback: (String) -> Unit) -> Unit,
+    isExporting: Boolean,
+    onExportPdf: () -> Unit,
+    pdfExporter: PdfExporter
 ) {
     Column(
         modifier = modifier
@@ -502,6 +525,44 @@ private fun IssueDetailContent(
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+        }
+
+        // Export PDF Button
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                if (!isExporting) {
+                    onExportPdf()
+                }
+            }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Export to PDF",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Generate PDF report with all details",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (isExporting) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text("📄", style = MaterialTheme.typography.headlineMedium)
                 }
             }
         }

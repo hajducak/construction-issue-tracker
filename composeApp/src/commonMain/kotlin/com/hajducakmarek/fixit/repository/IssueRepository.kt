@@ -537,4 +537,15 @@ class IssueRepository(databaseDriverFactory: DatabaseDriverFactory) {
             throw Exception("Failed to load personal statistics", e)
         }
     }
+
+    suspend fun getIssueWithFullDetails(issueId: String): Triple<Issue?, User?, User?> {
+        return try {
+            val issue = getIssueById(issueId)
+            val creator = issue?.let { getUserById(it.createdBy) }
+            val assignedWorker = issue?.assignedTo?.let { getUserById(it) }
+            Triple(issue, creator, assignedWorker)
+        } catch (e: Exception) {
+            throw Exception("Failed to load issue details for export", e)
+        }
+    }
 }

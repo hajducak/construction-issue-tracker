@@ -6,6 +6,7 @@ import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
+import com.hajducakmarek.fixit.utils.PdfExporter
 import com.hajducakmarek.fixit.repository.IssueRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,6 +47,12 @@ class IssueListViewModel(
 
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
+
+    private val _isExportingAll = MutableStateFlow(false)
+    val isExportingAll: StateFlow<Boolean> = _isExportingAll.asStateFlow()
+
+    private val _exportAllSuccess = MutableStateFlow<String?>(null)
+    val exportAllSuccess: StateFlow<String?> = _exportAllSuccess.asStateFlow()
 
     // Active filter count
     val activeFilterCount: StateFlow<Int> = combine(
@@ -145,5 +152,32 @@ class IssueListViewModel(
         }
 
         _issues.value = filtered
+    }
+
+    fun exportAllIssuesToPdf(pdfExporter: PdfExporter, onSuccess: (String) -> Unit) {
+        viewModelScope.launch {
+            _isExportingAll.value = true
+            try {
+                val issues = _issues.value
+
+                if (issues.isEmpty()) {
+                    throw Exception("No issues to export")
+                }
+
+                val filePath = pdfExporter.exportAllIssuesToPdf(issues)
+
+                _exportAllSuccess.value = filePath
+                onSuccess(filePath)
+            } catch (e: Exception) {
+                // Handle error if needed
+                println("Export failed: ${e.message}")
+            } finally {
+                _isExportingAll.value = false
+            }
+        }
+    }
+
+    fun clearExportAllSuccess() {
+        _exportAllSuccess.value = null
     }
 }

@@ -10,6 +10,7 @@ import com.hajducakmarek.fixit.models.CommentWithUser
 import com.hajducakmarek.fixit.models.ActivityLogWithUser
 import com.hajducakmarek.fixit.models.Photo
 import com.hajducakmarek.fixit.repository.IssueRepository
+import com.hajducakmarek.fixit.utils.PdfExporter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,6 +64,12 @@ class IssueDetailViewModel(
 
     private val _isLoadingPhotos = MutableStateFlow(false)
     val isLoadingPhotos: StateFlow<Boolean> = _isLoadingPhotos.asStateFlow()
+
+    private val _isExporting = MutableStateFlow(false)
+    val isExporting: StateFlow<Boolean> = _isExporting.asStateFlow()
+
+    private val _exportSuccess = MutableStateFlow<String?>(null)
+    val exportSuccess: StateFlow<String?> = _exportSuccess.asStateFlow()
 
     init {
         loadIssue()
@@ -260,5 +267,39 @@ class IssueDetailViewModel(
 
     fun clearError() {
         _error.value = null
+    }
+
+    fun exportIssueToPdf(pdfExporter: PdfExporter, onSuccess: (String) -> Unit) {
+        viewModelScope.launch {
+            _isExporting.value = true
+            _error.value = null
+            try {
+                val issue = _issue.value ?: throw Exception("Issue not found")
+                val (_, creator, assignedWorker) = repository.getIssueWithFullDetails(issueId)
+                val photos = _photos.value
+                val comments = _comments.value
+
+                if (creator == null) throw Exception("Creator not found")
+
+                val filePath = pdfExporter.exportIssueToPdf(
+                    issue = issue,
+                    photos = photos,
+                    comments = comments,
+                    creator = creator,
+                    assignedWorker = assignedWorker
+                )
+
+                _exportSuccess.value = filePath
+                onSuccess(filePath)
+            } catch (e: Exception) {
+                _error.value = "Failed to export PDF: ${e.message ?: "Unknown error"}"
+            } finally {
+                _isExporting.value = false
+            }
+        }
+    }
+
+    fun clearExportSuccess() {
+        _exportSuccess.value = null
     }
 }
