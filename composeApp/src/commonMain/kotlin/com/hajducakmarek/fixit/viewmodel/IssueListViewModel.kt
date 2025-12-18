@@ -6,6 +6,7 @@ import com.hajducakmarek.fixit.models.Issue
 import com.hajducakmarek.fixit.models.IssueStatus
 import com.hajducakmarek.fixit.models.User
 import com.hajducakmarek.fixit.models.UserRole
+import com.hajducakmarek.fixit.models.IssuePriority
 import com.hajducakmarek.fixit.utils.PdfExporter
 import com.hajducakmarek.fixit.repository.IssueRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +54,18 @@ class IssueListViewModel(
 
     private val _exportAllSuccess = MutableStateFlow<String?>(null)
     val exportAllSuccess: StateFlow<String?> = _exportAllSuccess.asStateFlow()
+
+    private val _selectedPriority = MutableStateFlow<IssuePriority?>(null)
+    val selectedPriority: StateFlow<IssuePriority?> = _selectedPriority.asStateFlow()
+
+    private val _showOverdueOnly = MutableStateFlow(false)
+    val showOverdueOnly: StateFlow<Boolean> = _showOverdueOnly.asStateFlow()
+
+    private val _dueDateFrom = MutableStateFlow<Long?>(null)
+    val dueDateFrom: StateFlow<Long?> = _dueDateFrom.asStateFlow()
+
+    private val _dueDateTo = MutableStateFlow<Long?>(null)
+    val dueDateTo: StateFlow<Long?> = _dueDateTo.asStateFlow()
 
     // Active filter count
     val activeFilterCount: StateFlow<Int> = combine(
@@ -116,42 +129,121 @@ class IssueListViewModel(
         applyFilters()
     }
 
+    fun getActiveFilterCount(): Int {
+        var count = 0
+        if (_searchQuery.value.isNotEmpty()) count++
+        if (_selectedStatus.value != null) count++
+        if (_selectedWorker.value != null) count++
+        if (_selectedPriority.value != null) count++
+        if (_showOverdueOnly.value) count++
+        if (_dueDateFrom.value != null) count++
+        if (_dueDateTo.value != null) count++
+        return count
+    }
+
     fun clearFilters() {
+        _searchQuery.value = ""
         _selectedStatus.value = null
         _selectedWorker.value = null
-        _searchQuery.value = ""
+        _selectedPriority.value = null
+        _showOverdueOnly.value = false
+        _dueDateFrom.value = null
+        _dueDateTo.value = null
+        applyFilters()
+    }
+
+    fun onPriorityFilterChanged(priority: IssuePriority?) {
+        _selectedPriority.value = priority
+        applyFilters()
+    }
+
+    fun onOverdueFilterChanged(showOverdue: Boolean) {
+        _showOverdueOnly.value = showOverdue
+        applyFilters()
+    }
+
+    fun onDueDateFromChanged(date: Long?) {
+        _dueDateFrom.value = date
+        applyFilters()
+    }
+
+    fun onDueDateToChanged(date: Long?) {
+        _dueDateTo.value = date
         applyFilters()
     }
 
     private fun applyFilters() {
-        var filtered = _allIssues.value
+        viewModelScope.launch {
+            val allIssues = repository.getAllIssues()
+            val searchTerm = _searchQuery.value.lowercase()
+            val status = _selectedStatus.value
+            val worker = _selectedWorker.value
+            val priority = _selectedPriority.value
+            val showOverdue = _showOverdueOnly.value
+            val dateFrom = _dueDateFrom.value
+            val dateTo = _dueDateTo.value
 
-        // ROLE-BASED FILTERING - Workers only see their assigned issues
-        if (currentUser.role == UserRole.WORKER) {
-            filtered = filtered.filter { it.assignedTo == currentUser.id }
-        }
-        // Managers see all issues (no filtering needed)
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 
-        // Filter by status
-        _selectedStatus.value?.let { status ->
-            filtered = filtered.filter { it.status == status }
-        }
+            val filtered = allIssues.filter { issue ->
+                // Text search filter
+                val matchesSearch = searchTerm.isEmpty() ||
+                        issue.description.lowercase().contains(searchTerm) ||
+                        issue.flatNumber.lowercase().contains(searchTerm)
 
-        // Filter by assigned worker
-        _selectedWorker.value?.let { worker ->
-            filtered = filtered.filter { it.assignedTo == worker.id }
-        }
+                // Status filter
+                val matchesStatus = status == null || issue.status == status
 
-        // Filter by search query
-        if (_searchQuery.value.isNotBlank()) {
-            val query = _searchQuery.value.lowercase()
-            filtered = filtered.filter { issue ->
-                issue.description.lowercase().contains(query) ||
-                        issue.flatNumber.lowercase().contains(query)
+                // Worker filter
+                val matchesWorker = worker == null || issue.assignedTo == worker.id
+
+                // Priority filter
+                val matchesPriority = priority == null || issue.priority == priority
+
+                // Overdue filter
+                val matchesOverdue = if (showOverdue) {
+                    issue.dueDate != null &&
+                            issue.dueDate < now &&
+                            issue.status != IssueStatus.VERIFIED
+                } else {
+                    true
+                }
+
+                // Due date range filter
+                val matchesDateRange = if (dateFrom != null || dateTo != null) {
+                    issue.dueDate?.let { dueDate ->
+                        val afterFrom = dateFrom == null || dueDate >= dateFrom
+                        val beforeTo = dateTo == null || dueDate <= dateTo
+                        afterFrom && beforeTo
+                    } ?: false
+                } else {
+                    true
+                }
+
+                matchesSearch && matchesStatus && matchesWorker &&
+                        matchesPriority && matchesOverdue && matchesDateRange
             }
-        }
 
-        _issues.value = filtered
+            _issues.value = filtered
+        }
+    }
+
+    fun filterMyIssues(currentUserId: String) {
+        clearFilters()
+        _selectedWorker.value = _workers.value.find { it.id == currentUserId }
+        applyFilters()
+    }
+
+    fun filterOverdueIssues() {
+        clearFilters()
+        _showOverdueOnly.value = true
+        applyFilters()
+    }
+
+    fun filterHighPriorityIssues() {
+        clearFilters()
+        _selectedPriority.value = IssuePriority.URGENT
+        applyFilters()
     }
 
     fun exportAllIssuesToPdf(pdfExporter: PdfExporter, onSuccess: (String) -> Unit) {
